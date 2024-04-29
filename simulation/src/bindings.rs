@@ -1,52 +1,69 @@
+#![allow(non_snake_case)]
 use crate::types::Simulation;
 use lazy_static::lazy_static;
+use serde_json;
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 
+// TODO: there must be a cleaner way to do this than a global variable
 lazy_static! {
     static ref SIMULATION: Mutex<Option<Simulation>> = Mutex::new(None);
 }
 
 #[wasm_bindgen]
+pub fn get_simulation_json() -> JsValue {
+    let simulation_option = SIMULATION.lock().expect("couldn't get simulation");
+    match *simulation_option {
+        Some(ref simulation) => {
+            let json_string = serde_json::to_string(simulation).unwrap();
+            JsValue::from_str(&json_string)
+        }
+        None => JsValue::NULL,
+    }
+}
+
+#[wasm_bindgen]
 pub fn create_simulation(
-    h3_resolution: i32,
-    num_nodes: usize,
-    real_channel_speed_min: f64,
-    real_channel_speed_max: f64,
-    real_latency_min: f64,
-    real_latency_max: f64,
-    model_state_noise_scale: f64,
-    model_measurement_variance: f64,
-    model_signal_speed_fraction: f64,
-    model_node_latency: f64,
-) {
+    h3Resolution: i32,
+    nNodes: usize,
+    realChannelSpeedMin: f64,
+    realChannelSpeedMax: f64,
+    realLatencyMin: f64,
+    realLatencyMax: f64,
+    modelDistanceMax: f64,
+    modelStateNoiseScale: f64,
+    modelMeasurementVariance: f64,
+    modelSignalSpeedFraction: f64,
+    modelNodeLatency: f64,
+    nEpochs: usize,
+    nMeasurements: usize,
+) -> JsValue {
     let simulation = Simulation::new(
-        h3_resolution,
-        num_nodes,
-        real_channel_speed_min,
-        real_channel_speed_max,
-        real_latency_min,
-        real_latency_max,
-        model_state_noise_scale,
-        model_measurement_variance,
-        model_signal_speed_fraction,
-        model_node_latency,
+        h3Resolution,
+        nNodes,
+        realChannelSpeedMin,
+        realChannelSpeedMax,
+        realLatencyMin,
+        realLatencyMax,
+        modelDistanceMax,
+        modelStateNoiseScale,
+        modelMeasurementVariance,
+        modelSignalSpeedFraction,
+        modelNodeLatency,
+        nEpochs,
+        nMeasurements,
     );
     *SIMULATION.lock().unwrap() = Some(simulation);
+    return get_simulation_json();
 }
 
 #[wasm_bindgen]
-pub fn initialize_simulation() {
+pub fn run_simulation() -> JsValue {
     if let Some(simulation) = &mut *SIMULATION.lock().unwrap() {
-        simulation.initialize_simulation();
+        simulation.run_simulation();
     }
-}
 
-#[wasm_bindgen]
-pub fn run_simulation(n_epochs: usize, n_measurements: usize, d_max: f64) {
-    if let Some(simulation) = &mut *SIMULATION.lock().unwrap() {
-        simulation.run_simulation(n_epochs, n_measurements, d_max);
-    }
+    return get_simulation_json();
 }
 
 #[wasm_bindgen]

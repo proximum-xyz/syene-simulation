@@ -60,6 +60,7 @@ impl Node {
         let previous_estimate = StateAndCovariance::new(estimated_state, initial_covariance);
 
         for measurement in measurements.iter() {
+            // TODO: filter by model_distance_max and node quality
             // Update the observation matrix based on the current positions of the two nodes
             let their_enu_position = ecef_to_enu(
                 &measurement.other_node_estimated_position,
@@ -98,11 +99,32 @@ impl Simulation {
         real_channel_speed_max: f64,
         real_latency_min: f64,
         real_latency_max: f64,
+        model_distance_max: f64,
         model_state_noise_scale: f64,
         model_measurement_variance: f64,
         model_signal_speed_fraction: f64,
         model_node_latency: f64,
+        n_epochs: usize,
+        n_measurements: usize,
     ) -> Self {
+        let mut nodes: Vec<Node> = Vec::new();
+
+        for _ in 0..num_nodes {
+            let resolution = Resolution::try_from(h3_resolution).expect("invalid H3 resolution");
+            let cell_index = random_h3_index(resolution);
+
+            let node = Node::new(
+                nodes.len(),
+                cell_index,
+                cell_index,
+                draw_from_range(real_channel_speed_min, real_channel_speed_max),
+                draw_from_range(real_latency_min, real_latency_max),
+                model_state_noise_scale,
+                model_measurement_variance,
+            );
+            nodes.push(node);
+        }
+
         Simulation {
             nodes: Vec::new(),
             h3_resolution,
@@ -111,40 +133,23 @@ impl Simulation {
             real_channel_speed_max,
             real_latency_min,
             real_latency_max,
+            model_distance_max,
             model_state_noise_scale,
             model_measurement_variance,
             model_signal_speed_fraction,
             model_node_latency,
+            n_epochs,
+            n_measurements,
         }
     }
 
-    pub fn initialize_simulation(&mut self) -> bool {
-        for _ in 0..self.num_nodes {
-            let resolution =
-                Resolution::try_from(self.h3_resolution).expect("invalid H3 resolution");
-            let cell_index = random_h3_index(resolution);
-
-            let node = Node::new(
-                self.nodes.len(),
-                cell_index,
-                cell_index,
-                draw_from_range(self.real_channel_speed_min, self.real_channel_speed_max),
-                draw_from_range(self.real_latency_min, self.real_latency_max),
-                self.model_state_noise_scale,
-                self.model_measurement_variance,
-            );
-            self.nodes.push(node);
-        }
-        true
-    }
-
-    pub fn run_simulation(&mut self, n_epochs: usize, n_measurements: usize, d_max: f64) -> bool {
+    pub fn run_simulation(&mut self) -> bool {
         let resolution = Resolution::try_from(self.h3_resolution).expect("invalid H3 resolution");
 
-        for _ in 0..n_epochs {
+        for _ in 0..self.n_epochs {
             let mut measurements: Vec<Measurement> = Vec::new();
 
-            for i in 0..n_measurements {
+            for i in 0..self.n_measurements {
                 if i + 1 < self.nodes.len() {
                     let node = &self.nodes[0];
                     let other_node = &self.nodes[i + 1];
@@ -152,7 +157,7 @@ impl Simulation {
                     let true_distance =
                         euclidean_distance(&node.true_position, &other_node.true_position);
 
-                    if true_distance <= d_max {
+                    if true_distance <= self.model_distance_max {
                         let measured_distance = distance_measurement(
                             node,
                             other_node,

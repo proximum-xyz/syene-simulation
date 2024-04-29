@@ -1,5 +1,5 @@
 [package]
-name = "Proximum simulation"
+name = "proximum-simulation"
 version = "0.1.0"
 edition = "2021"
 description = "simulation of Proximum state estimation for stationary terrestrial nodes"

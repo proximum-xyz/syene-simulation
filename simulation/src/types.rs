@@ -38,8 +38,12 @@ pub struct Simulation {
     pub real_latency_min: f64,
     pub real_latency_max: f64,
     // model parameters
+    pub model_distance_max: f64,
     pub model_state_noise_scale: f64,
     pub model_measurement_variance: f64,
     pub model_signal_speed_fraction: f64,
     pub model_node_latency: f64,
+    // simulation parameters
+    pub n_epochs: usize,
+    pub n_measurements: usize,
 }

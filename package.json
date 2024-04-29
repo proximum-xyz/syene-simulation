@@ -1,5 +1,5 @@
 {
-  "name": "proximum-simulation",
+  "name": "proximum-simulation-web",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -10,10 +10,13 @@
     "@testing-library/user-event": "^13.5.0",
     "h3-js": "^4.1.0",
     "leaflet": "^1.9.4",
+    "proximum-simulation": "file:simulation/pkg",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hook-form": "^7.51.3",
     "react-leaflet": "^4.2.1",
     "react-scripts": "5.0.1",
+    "styled-components": "^6.1.8",
     "three": "^0.163.0",
     "web-vitals": "^2.1.4"
   },
@@ -21,7 +24,10 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint './src/**/*.{js,jsx,ts,tsx}'",
+    "lint:fix": "eslint './src/**/*.{js,jsx,ts,tsx}' --fix",
+    "transpile-wasm": "cd simulation && wasm-pack build --target web --out-dir pkg"
   },
   "eslintConfig": {
     "extends": [
@@ -40,5 +46,13 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/leaflet": "^1.9.12",
+    "@types/node": "^20.12.7",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^4.9.5"
   }
 }
