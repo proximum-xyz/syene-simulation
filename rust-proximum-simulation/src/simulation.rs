@@ -10,6 +10,7 @@ use h3o::{CellIndex, Resolution};
 use nalgebra::{Matrix2, Vector1, Vector2};
 use rand::distributions::Uniform;
 use rand::prelude::*;
+use web_sys::console;
 
 // Track each node in the network
 impl Node {
@@ -144,8 +145,12 @@ impl Simulation {
     }
 
     pub fn run_simulation(&mut self) -> bool {
+        console_error_panic_hook::set_once();
         let resolution = Resolution::try_from(self.h3_resolution).expect("invalid H3 resolution");
 
+        console::log_1(&"Hello from Rust!".into());
+        console::log_1(&self.num_nodes.into());
+        console::log_1(&self.nodes.len().into());
         for _ in 0..self.n_epochs {
             let mut measurements: Vec<Measurement> = Vec::new();
 

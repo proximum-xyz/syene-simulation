@@ -3,10 +3,11 @@ import { createRoot } from 'react-dom/client';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import * as h3 from 'h3-js';
+// import 'source-map-support/register';
 import init, {
   create_simulation,
   run_simulation,
-} from 'proximum-simulation';
+} from 'rust-proximum-simulation';
 import SimulationControls, { SimulationParams } from './SimulationControls';
 
 // ref: https://github.com/clupasq/h3-viewer

@@ -10,7 +10,7 @@
     "@testing-library/user-event": "^13.5.0",
     "h3-js": "^4.1.0",
     "leaflet": "^1.9.4",
-    "proximum-simulation": "file:simulation/pkg",
+    "rust-proximum-simulation": "file:rust-proximum-simulation/pkg",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.51.3",
@@ -27,7 +27,7 @@
     "eject": "react-scripts eject",
     "lint": "eslint './src/**/*.{js,jsx,ts,tsx}'",
     "lint:fix": "eslint './src/**/*.{js,jsx,ts,tsx}' --fix",
-    "transpile-wasm": "cd simulation && wasm-pack build --target web --out-dir pkg"
+    "transpile-wasm": "cd rust-proximum-simulation && wasm-pack build --target web --out-dir pkg --debug"
   },
   "eslintConfig": {
     "extends": [

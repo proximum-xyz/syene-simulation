@@ -1,5 +1,5 @@
 [package]
-name = "proximum-simulation"
+name = "rust-proximum-simulation"
 version = "0.1.0"
 edition = "2021"
 description = "simulation of Proximum state estimation for stationary terrestrial nodes"
@@ -19,6 +19,8 @@ nalgebra = { version = "0.32.5", features = ["serde-serialize"] }
 num-traits = "0.2.18"
 adskalman = "0.15.1"
 lazy_static = "1.4.0"
+console_error_panic_hook = "0.1.7"
+web-sys = { version = "0.3.69", features = ["console"] }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
