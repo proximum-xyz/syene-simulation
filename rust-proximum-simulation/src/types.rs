@@ -1,7 +1,26 @@
 use crate::kalman::{DistanceObservationModel, StationaryNode2DModel};
 use h3o::{CellIndex, LatLng};
 use nalgebra::Vector3;
-use serde::Serialize;
+use serde::{Serialize, Serializer};
+extern crate nav_types;
+use nav_types::{ECEF, ENU, WGS84};
+
+// Wrapper struct for ECEF<f64> allowing serialization
+#[derive(Debug, Clone)]
+pub struct ECEFWrapper(ECEF<f64>);
+
+mod serialize_ecef {
+    use super::*;
+    use serde::Serializer;
+
+    pub fn serialize<S>(ecef: &ECEF<f64>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let coordinates = (ecef.x(), ecef.y(), ecef.z());
+        serializer.serialize_newtype_struct("ECEF", &coordinates)
+    }
+}
 
 #[derive(Serialize)]
 pub struct Node {
@@ -9,10 +28,12 @@ pub struct Node {
     pub true_index: CellIndex,
     pub asserted_index: CellIndex,
     pub estimated_index: CellIndex,
-    pub true_position: Vector3<f64>,
-    pub estimated_position: Vector3<f64>,
-    pub true_lat_lng: LatLng,
-    pub estimated_lat_lng: LatLng,
+    #[serde(with = "serialize_ecef")]
+    pub true_position: ECEF<f64>,
+    #[serde(with = "serialize_ecef")]
+    pub estimated_position: ECEF<f64>,
+    pub true_wgs84: WGS84<f64>,
+    pub estimated_wgs84: WGS84<f64>,
     pub channel_speed: f64,
     pub latency: f64,
     #[serde(skip)]
@@ -22,7 +43,7 @@ pub struct Node {
 }
 
 pub struct Measurement {
-    pub other_node_estimated_position: Vector3<f64>,
+    pub other_node_estimated_position: ECEF<f64>,
     pub measured_distance: f64,
 }
 
@@ -31,7 +52,7 @@ pub struct Simulation {
     // general simulation parameters
     pub nodes: Vec<Node>,
     pub h3_resolution: i32,
-    pub num_nodes: usize,
+    pub n_nodes: usize,
     // physical parameters
     pub real_channel_speed_min: f64,
     pub real_channel_speed_max: f64,

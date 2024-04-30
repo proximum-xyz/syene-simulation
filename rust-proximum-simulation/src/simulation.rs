@@ -1,13 +1,13 @@
-use crate::geometry::{
-    clamp_ecef_to_ellipsoid, ecef_to_enu, ecef_to_h3, ecef_to_lat_lng, enu_to_ecef,
-    euclidean_distance, h3_to_ecef, random_h3_index,
-};
+use crate::geometry::{clamp_ecef_to_ellipsoid, ecef_to_h3, h3_to_ecef, random_h3_index};
+
+extern crate nav_types;
 use crate::kalman::{DistanceObservationModel, StationaryNode2DModel};
 use crate::physics::distance_measurement;
 use crate::types::{Measurement, Node, Simulation};
 use adskalman::{KalmanFilterNoControl, StateAndCovariance};
 use h3o::{CellIndex, Resolution};
 use nalgebra::{Matrix2, Vector1, Vector2};
+use nav_types::{ECEF, ENU, WGS84};
 use rand::distributions::Uniform;
 use rand::prelude::*;
 use web_sys::console;
@@ -36,14 +36,12 @@ impl Node {
             estimated_index: asserted_index,
             true_position,
             estimated_position: true_position,
-            true_lat_lng: ecef_to_lat_lng(true_position),
-            estimated_lat_lng: ecef_to_lat_lng(true_position),
+            true_wgs84: WGS84::from(true_position),
+            estimated_wgs84: WGS84::from(true_position),
             channel_speed,
             latency,
-            // kalman filter stuff
             state_model,
             observation_model,
-            // kf,
         }
     }
 
@@ -63,13 +61,14 @@ impl Node {
         for measurement in measurements.iter() {
             // TODO: filter by model_distance_max and node quality
             // Update the observation matrix based on the current positions of the two nodes
-            let their_enu_position = ecef_to_enu(
-                &measurement.other_node_estimated_position,
-                &self.estimated_position,
-            );
+            let their_enu_position: ENU<f64> =
+                ENU::from(measurement.other_node_estimated_position - self.estimated_position);
+
+            let their_en_position =
+                Vector2::from([their_enu_position.east(), their_enu_position.north()]);
 
             self.observation_model
-                .update_observation_matrix(&estimated_state, &their_enu_position);
+                .update_observation_matrix(&estimated_state, &their_en_position);
 
             let kf = KalmanFilterNoControl::new(&self.state_model, &mut self.observation_model);
 
@@ -79,23 +78,21 @@ impl Node {
                 .expect("bad kalman filter step");
         }
 
-        // Convert back to ECEF (the origin was the prior estimated position in ECEF coordinates)
-        let position_ecef = enu_to_ecef(&estimated_state, &self.estimated_position);
+        // Add the estimated ENU position to the prior ECEF position.
+        let new_estimated_position =
+            self.estimated_position + ENU::new(estimated_state[0], estimated_state[1], 0.0);
 
         // clamp back to earth's surface
-        let position_ecf_clamped = clamp_ecef_to_ellipsoid(&position_ecef);
-
-        // Record the new estimated position of the node in various coordinate systems
-        self.estimated_position = position_ecf_clamped;
-        self.estimated_lat_lng = ecef_to_lat_lng(position_ecf_clamped);
-        self.estimated_index = ecef_to_h3(position_ecf_clamped, resolution);
+        self.estimated_position = clamp_ecef_to_ellipsoid(new_estimated_position);
+        self.estimated_wgs84 = self.estimated_position.into();
+        self.estimated_index = ecef_to_h3(self.estimated_position, resolution);
     }
 }
 
 impl Simulation {
     pub fn new(
         h3_resolution: i32,
-        num_nodes: usize,
+        n_nodes: usize,
         real_channel_speed_min: f64,
         real_channel_speed_max: f64,
         real_latency_min: f64,
@@ -110,7 +107,7 @@ impl Simulation {
     ) -> Self {
         let mut nodes: Vec<Node> = Vec::new();
 
-        for _ in 0..num_nodes {
+        for _ in 0..n_nodes {
             let resolution = Resolution::try_from(h3_resolution).expect("invalid H3 resolution");
             let cell_index = random_h3_index(resolution);
 
@@ -126,10 +123,12 @@ impl Simulation {
             nodes.push(node);
         }
 
+        console::log_1(&"Creating simulation!".into());
+
         Simulation {
-            nodes: Vec::new(),
+            nodes,
             h3_resolution,
-            num_nodes,
+            n_nodes,
             real_channel_speed_min,
             real_channel_speed_max,
             real_latency_min,
@@ -148,8 +147,8 @@ impl Simulation {
         console_error_panic_hook::set_once();
         let resolution = Resolution::try_from(self.h3_resolution).expect("invalid H3 resolution");
 
-        console::log_1(&"Hello from Rust!".into());
-        console::log_1(&self.num_nodes.into());
+        console::log_1(&"Running simulation!".into());
+        console::log_1(&self.n_nodes.into());
         console::log_1(&self.nodes.len().into());
         for _ in 0..self.n_epochs {
             let mut measurements: Vec<Measurement> = Vec::new();
@@ -159,10 +158,10 @@ impl Simulation {
                     let node = &self.nodes[0];
                     let other_node = &self.nodes[i + 1];
 
-                    let true_distance =
-                        euclidean_distance(&node.true_position, &other_node.true_position);
+                    let true_distance = &node.true_position.distance(&other_node.true_position);
+                    // euclidean_distance(&node.true_position, &other_node.true_position);
 
-                    if true_distance <= self.model_distance_max {
+                    if true_distance <= &self.model_distance_max {
                         let measured_distance = distance_measurement(
                             node,
                             other_node,

@@ -147,7 +147,7 @@ const Map = () => {
 
   function runSimulation(simulationParams: SimulationParams) {
     console.log('*** Map: about to start simulation with these parameters', { simulationParams });
-    create_simulation(
+    const sim: any = create_simulation(
       simulationParams.h3Resolution,
       simulationParams.nNodes,
       simulationParams.realChannelSpeedMin,
@@ -162,6 +162,8 @@ const Map = () => {
       simulationParams.nEpochs,
       simulationParams.nMeasurements
     );
+    console.log('***', { sim });
+    
     run_simulation();
 
     console.log('*** Map: simulation done', {});

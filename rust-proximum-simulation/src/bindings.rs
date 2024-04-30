@@ -67,7 +67,7 @@ pub fn run_simulation() -> JsValue {
 }
 
 #[wasm_bindgen]
-pub fn get_num_nodes() -> usize {
+pub fn get_n_nodes() -> usize {
     if let Some(simulation) = &*SIMULATION.lock().unwrap() {
         simulation.nodes.len()
     } else {
