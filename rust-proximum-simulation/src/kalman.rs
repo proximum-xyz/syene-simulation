@@ -1,4 +1,5 @@
 use adskalman::{ObservationModel, TransitionModelLinearNoControl};
+use log::info;
 use nalgebra::{DimMin, Vector2};
 
 use nalgebra::{
@@ -96,6 +97,10 @@ impl<R: RealField + Copy> DistanceObservationModel<R> {
 
     // Update the observation matrix based on the current positions of the two nodes
     pub fn update_observation_matrix(&mut self, node1_pos: &Vector2<R>, node2_pos: &Vector2<R>) {
+        info!(
+            "Updating observation matrix! Initial matrix: {:#?}",
+            self.observation_matrix
+        );
         let dx = node2_pos[0] - node1_pos[0];
         let dy = node2_pos[1] - node1_pos[1];
         let distance = (dx * dx + dy * dy).sqrt();
@@ -105,6 +110,10 @@ impl<R: RealField + Copy> DistanceObservationModel<R> {
 
         self.observation_matrix = OMatrix::<R, U1, U2>::new(h1, h2);
         self.observation_matrix_transpose = self.observation_matrix.transpose();
+        info!(
+            "Updating observation matrix! Final matrix: {:#?}",
+            self.observation_matrix
+        );
     }
 }
 

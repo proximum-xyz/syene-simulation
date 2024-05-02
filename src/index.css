@@ -16,3 +16,13 @@ code {
 .leaflet-container {
   background: #000000 !important;
 }
+
+.leaflet-custom-marker {
+  color: white;
+  /* background-color: white; */
+  border: 1px solid blue;
+  border-radius: 50%;
+  text-align: center;
+  font-weight: bold;
+  line-height: 30px;
+}

@@ -1,13 +1,8 @@
 use crate::kalman::{DistanceObservationModel, StationaryNode2DModel};
-use h3o::{CellIndex, LatLng};
-use nalgebra::Vector3;
-use serde::{Serialize, Serializer};
+use h3o::CellIndex;
+use serde::Serialize;
 extern crate nav_types;
-use nav_types::{ECEF, ENU, WGS84};
-
-// Wrapper struct for ECEF<f64> allowing serialization
-#[derive(Debug, Clone)]
-pub struct ECEFWrapper(ECEF<f64>);
+use nav_types::{ECEF, WGS84};
 
 mod serialize_ecef {
     use super::*;
@@ -60,7 +55,7 @@ pub struct Simulation {
     pub real_latency_max: f64,
     // model parameters
     pub model_distance_max: f64,
-    pub model_state_noise_scale: f64,
+    pub model_state_variance: f64,
     pub model_measurement_variance: f64,
     pub model_signal_speed_fraction: f64,
     pub model_node_latency: f64,

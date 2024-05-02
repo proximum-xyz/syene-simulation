@@ -20,16 +20,16 @@ export interface SimulationParams {
 
 const defaultSimulationParams: SimulationParams = {
   h3Resolution: 7,
-  nNodes: 100,
+  nNodes: 10,
   realChannelSpeedMin: 0.7,
-  realChannelSpeedMax: 1.0,
-  realLatencyMin: 10.0,
-  realLatencyMax: 50.0,
+  realChannelSpeedMax: 0.7,
+  realLatencyMin: 30.0,
+  realLatencyMax: 30.0,
   modelDistanceMax: 1000_000_000.0,
-  modelStateNoiseScale: 0.1,
-  modelMeasurementVariance: 1.0,
+  modelStateNoiseScale: 1,
+  modelMeasurementVariance: 10.0,
   modelSignalSpeedFraction: 0.8,
-  modelNodeLatency: 20.0,
+  modelNodeLatency: 30.0,
   nEpochs: 1,
   nMeasurements: 10,
 }
@@ -82,10 +82,7 @@ const SimulationControls = ({ runSimulation }: { runSimulation: (params: Simulat
         return [key, parsedValue];
       })
     ) as unknown as SimulationParams;
-
-    console.log('***', { parsedParams });
     runSimulation(parsedParams);
-    console.log('*** sim done', {});
   };
 
   return (
@@ -97,7 +94,7 @@ const SimulationControls = ({ runSimulation }: { runSimulation: (params: Simulat
           <Controller
             name="h3Resolution"
             control={control}
-            render={({ field }) => <Input type="number" {...field} />}
+            render={({ field }) => <Input type="number" step="1" {...field} />}
           />
         </FormGroup>
         <FormGroup>
@@ -105,7 +102,7 @@ const SimulationControls = ({ runSimulation }: { runSimulation: (params: Simulat
           <Controller
             name="nNodes"
             control={control}
-            render={({ field }) => <Input type="number" {...field} />}
+            render={({ field }) => <Input type="number" step="1" {...field} />}
           />
         </FormGroup>
         <FormGroup>
@@ -170,6 +167,22 @@ const SimulationControls = ({ runSimulation }: { runSimulation: (params: Simulat
             name="modelNodeLatency"
             control={control}
             render={({ field }) => <Input type="number" step="0.1" {...field} />}
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>Epochs:</Label>
+          <Controller
+            name="nEpochs"
+            control={control}
+            render={({ field }) => <Input type="number" step="1" {...field} />}
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>Measurements per Epoch:</Label>
+          <Controller
+            name="nMeasurements"
+            control={control}
+            render={({ field }) => <Input type="number" step="1" {...field} />}
           />
         </FormGroup>
         <Button type="submit">Simulate</Button>
