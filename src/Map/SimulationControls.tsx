@@ -33,32 +33,38 @@ const defaultSimulationParams: SimulationParams = {
   nEpochs: 1,
   nMeasurements: 10,
 }
-
 const ControlsWrapper = styled.div`
   position: fixed;
   top: 20px;
   right: 20px;
-  background-color: white;
+  background-color: #1f1f1f;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  color: #ffffff;
+  max-width: 220px;
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 `;
 
 const Label = styled.label`
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   font-weight: bold;
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
+  padding: 6px 12px;
+  border: 1px solid #555555;
   border-radius: 4px;
+  background-color: #333333;
+  color: #ffffff;
+  box-sizing: border-box;
 `;
 
 const Button = styled.button`
@@ -69,6 +75,46 @@ const Button = styled.button`
   border-radius: 4px;
   cursor: pointer;
 `;
+
+
+// const ControlsWrapper = styled.div`
+//   position: fixed;
+//   top: 20px;
+//   right: 20px;
+//   background-color: #1f1f1f;
+//   padding: 20px;
+//   border-radius: 8px;
+//   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+//   color: #ffffff;
+// `;
+
+// const FormGroup = styled.div`
+//   margin-bottom: 12px;
+// `;
+
+// const Label = styled.label`
+//   display: block;
+//   margin-bottom: 4px;
+//   font-weight: bold;
+// `;
+
+// const Input = styled.input`
+//   width: 100%;
+//   padding: 6px 12px;
+//   border: 1px solid #555555;
+//   border-radius: 4px;
+//   background-color: #333333;
+//   color: #ffffff;
+// `;
+
+// const Button = styled.button`
+//   padding: 8px 16px;
+//   background-color: #007bff;
+//   color: white;
+//   border: none;
+//   border-radius: 4px;
+//   cursor: pointer;
+// `;
 
 const SimulationControls = ({ runSimulation }: { runSimulation: (params: SimulationParams) => void }) => {
   const { control, handleSubmit } = useForm({
