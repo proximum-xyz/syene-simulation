@@ -24,7 +24,6 @@ const Map = () => {
   function runSimulation(simulationParams: SimulationParams) {
     const simString = simulate(
       simulationParams.h3Resolution,
-      simulationParams.nNodes,
       simulationParams.realChannelSpeedMin,
       simulationParams.realChannelSpeedMax,
       simulationParams.realLatencyMin,
@@ -35,7 +34,6 @@ const Map = () => {
       simulationParams.modelSignalSpeedFraction,
       simulationParams.modelNodeLatency,
       simulationParams.nEpochs,
-      simulationParams.nMeasurements
     );
 
     const sim = JSON.parse(simString);

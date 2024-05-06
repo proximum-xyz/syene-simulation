@@ -4,7 +4,6 @@ import styled from 'styled-components';
 
 export interface SimulationParams {
   h3Resolution: number;
-  nNodes: number;
   realChannelSpeedMin: number;
   realChannelSpeedMax: number;
   realLatencyMin: number;
@@ -15,12 +14,10 @@ export interface SimulationParams {
   modelSignalSpeedFraction: number;
   modelNodeLatency: number;
   nEpochs: number;
-  nMeasurements: number;
 }
 
 const defaultSimulationParams: SimulationParams = {
   h3Resolution: 7,
-  nNodes: 2,
   realChannelSpeedMin: 0.7,
   realChannelSpeedMax: 0.7,
   realLatencyMin: 30.0,
@@ -31,7 +28,6 @@ const defaultSimulationParams: SimulationParams = {
   modelSignalSpeedFraction: 0.8,
   modelNodeLatency: 30.0,
   nEpochs: 1,
-  nMeasurements: 1,
 }
 const ControlsWrapper = styled.div`
   position: fixed;
@@ -144,14 +140,6 @@ const SimulationControls = ({ runSimulation }: { runSimulation: (params: Simulat
           />
         </FormGroup>
         <FormGroup>
-          <Label>Number of Nodes:</Label>
-          <Controller
-            name="nNodes"
-            control={control}
-            render={({ field }) => <Input type="number" step="1" {...field} />}
-          />
-        </FormGroup>
-        <FormGroup>
           <Label>Real Channel Speed Min:</Label>
           <Controller
             name="realChannelSpeedMin"
@@ -219,14 +207,6 @@ const SimulationControls = ({ runSimulation }: { runSimulation: (params: Simulat
           <Label>Epochs:</Label>
           <Controller
             name="nEpochs"
-            control={control}
-            render={({ field }) => <Input type="number" step="1" {...field} />}
-          />
-        </FormGroup>
-        <FormGroup>
-          <Label>Measurements per Epoch:</Label>
-          <Controller
-            name="nMeasurements"
             control={control}
             render={({ field }) => <Input type="number" step="1" {...field} />}
           />

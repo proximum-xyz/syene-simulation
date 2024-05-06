@@ -20,7 +20,6 @@ export interface Node {
 export interface Simulation {
   nodes: Node[];
   h3_resolution: number;
-  n_nodes: number;
   real_channel_speed_min: number;
   real_channel_speed_max: number;
   real_latency_min: number;
@@ -31,5 +30,4 @@ export interface Simulation {
   model_signal_speed_fraction: number;
   model_node_latency: number;
   n_epochs: number;
-  n_measurements: number;
 }
