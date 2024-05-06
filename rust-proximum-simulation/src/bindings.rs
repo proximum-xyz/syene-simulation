@@ -2,6 +2,7 @@
 use crate::types::Simulation;
 use console_log::{init, init_with_level};
 use log::LevelFilter;
+use nalgebra::Matrix3;
 use serde_json;
 // use serde_wasm_bindgen::to_value;
 use wasm_bindgen::prelude::*;
@@ -16,7 +17,6 @@ pub fn init_logger() {
 #[wasm_bindgen]
 pub fn simulate(
     h3Resolution: i32,
-    nNodes: usize,
     realChannelSpeedMin: f64,
     realChannelSpeedMax: f64,
     realLatencyMin: f64,
@@ -27,11 +27,9 @@ pub fn simulate(
     modelSignalSpeedFraction: f64,
     modelNodeLatency: f64,
     nEpochs: usize,
-    nMeasurements: usize,
 ) -> String {
     let mut simulation = Simulation::new(
         h3Resolution,
-        nNodes,
         realChannelSpeedMin,
         realChannelSpeedMax,
         realLatencyMin,
@@ -42,14 +40,15 @@ pub fn simulate(
         modelSignalSpeedFraction,
         modelNodeLatency,
         nEpochs,
-        nMeasurements,
     );
+    // some helpful instrumentation for JS work.
     init_logger();
+    console_error_panic_hook::set_once();
     simulation.run_simulation();
 
     let json = serde_json::to_string(&simulation).unwrap();
     json
 
-    // TODO: figure out how to handlel the H3 indices which are blowing up the serialization
+    // TODO: figure out how to handle the H3 indices which are blowing up the serialization
     // to_value(&simulation).unwrap()
 }

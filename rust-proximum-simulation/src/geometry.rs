@@ -23,6 +23,7 @@ pub fn ecef_to_h3(position: ECEF<f64>, resolution: Resolution) -> CellIndex {
 
 // Clamp ECEF coordinates to the surface of the WGS84 ellipsoid
 // This is an approximation only suitable for the earth's surface
+// TODO: simplify? Should this be a constraint within the state / meas model?
 pub fn clamp_ecef_to_ellipsoid(ecef_coords: ECEF<f64>) -> ECEF<f64> {
     let lat_lng = WGS84::from(ecef_coords);
     let lat_lng_clamped = WGS84::from_radians_and_meters(

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Polyline, Marker, useMap, LayersControl, Popup, Pane } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 // import * as h3 from 'h3-js';
-// import arc from 'arc';
 import init, { simulate } from 'rust-proximum-simulation';
 import SimulationControls, { SimulationParams } from './SimulationControls';
 import { Node } from '../types';
@@ -75,7 +74,7 @@ const Map = () => {
 
   return (
     <>
-      <MapContainer center={[0, 0]} zoom={3} style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: '100%' }}>
+      <MapContainer center={[0, 0]} zoom={3} zoomControl={false} style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: '100%' }}>
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution="&copy; OpenStreetMap contributors &copy; CARTO"

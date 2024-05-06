@@ -20,7 +20,7 @@ export interface SimulationParams {
 
 const defaultSimulationParams: SimulationParams = {
   h3Resolution: 7,
-  nNodes: 10,
+  nNodes: 2,
   realChannelSpeedMin: 0.7,
   realChannelSpeedMax: 0.7,
   realLatencyMin: 30.0,
@@ -31,7 +31,7 @@ const defaultSimulationParams: SimulationParams = {
   modelSignalSpeedFraction: 0.8,
   modelNodeLatency: 30.0,
   nEpochs: 1,
-  nMeasurements: 10,
+  nMeasurements: 1,
 }
 const ControlsWrapper = styled.div`
   position: fixed;

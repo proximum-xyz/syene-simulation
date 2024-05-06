@@ -1,4 +1,4 @@
-use crate::kalman::{DistanceObservationModel, StationaryNode2DModel};
+use crate::kalman::{NonlinearObservationModel, State, StationaryStateModel};
 use h3o::CellIndex;
 use serde::Serialize;
 extern crate nav_types;
@@ -31,15 +31,11 @@ pub struct Node {
     pub estimated_wgs84: WGS84<f64>,
     pub channel_speed: f64,
     pub latency: f64,
-    #[serde(skip)]
-    pub state_model: StationaryNode2DModel<f64>,
-    #[serde(skip)]
-    pub observation_model: DistanceObservationModel<f64>,
 }
 
 pub struct Measurement {
-    pub other_node_estimated_position: ECEF<f64>,
-    pub measured_distance: f64,
+    pub node_indices: (usize, usize),
+    pub distance: f64,
 }
 
 #[derive(Serialize)]
@@ -47,7 +43,6 @@ pub struct Simulation {
     // general simulation parameters
     pub nodes: Vec<Node>,
     pub h3_resolution: i32,
-    pub n_nodes: usize,
     // physical parameters
     pub real_channel_speed_min: f64,
     pub real_channel_speed_max: f64,
@@ -59,7 +54,13 @@ pub struct Simulation {
     pub model_measurement_variance: f64,
     pub model_signal_speed_fraction: f64,
     pub model_node_latency: f64,
-    // simulation parameters
+    // simulation parameters (note that the numbers of nodes and measurements are compiler flags)
     pub n_epochs: usize,
-    pub n_measurements: usize,
+    // kalman filter implementation
+    #[serde(skip)]
+    pub state_model: StationaryStateModel<f64>,
+    #[serde(skip)]
+    pub observation_model_generator: NonlinearObservationModel,
+    #[serde(skip)]
+    pub state: State,
 }
