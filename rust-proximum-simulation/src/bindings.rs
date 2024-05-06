@@ -1,8 +1,7 @@
 #![allow(non_snake_case)]
 use crate::types::Simulation;
-use console_log::{init, init_with_level};
+use console_log::init_with_level;
 use log::LevelFilter;
-use nalgebra::Matrix3;
 use serde_json;
 // use serde_wasm_bindgen::to_value;
 use wasm_bindgen::prelude::*;

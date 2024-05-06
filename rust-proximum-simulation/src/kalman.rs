@@ -1,6 +1,7 @@
 use adskalman::{ObservationModel, StateAndCovariance, TransitionModelLinearNoControl};
+#[allow(unused_imports)]
 use nalgebra::{DimMin, OVector, Vector2, Vector3, Vector4, U1, U10, U100, U30, U6};
-use typenum::U300;
+// use typenum::U300;
 
 use nalgebra::{allocator::Allocator, DefaultAllocator, OMatrix, RealField};
 
@@ -35,6 +36,9 @@ pub const N_MEASUREMENTS: usize = 10;
 pub type OS = U100;
 #[cfg(n_measurements = "100")]
 pub const N_MEASUREMENTS: usize = 100;
+
+// Minimum distance between nodes for a valid measurement
+const MINIMUM_DISTANCE: f64 = 100.0;
 
 // We use the same precision for all numbers
 type Precision = f64;
@@ -168,14 +172,12 @@ where
 
 pub struct NonlinearObservationModel {
     observation_noise_covariance: f64,
-    minimum_distance: f64,
 }
 
 impl NonlinearObservationModel {
-    pub fn new(observation_noise_covariance: f64, minimum_distance: f64) -> Self {
+    pub fn new(observation_noise_covariance: f64) -> Self {
         Self {
             observation_noise_covariance: observation_noise_covariance,
-            minimum_distance: minimum_distance,
         }
     }
 
@@ -186,10 +188,11 @@ impl NonlinearObservationModel {
         measurement_indices: Vec<(usize, usize)>,
         // measurement_indices: [(usize, usize); N_MEASUREMENTS],
     ) -> LinearizedObservationModel {
+        let measurement_indices_clone = measurement_indices.clone();
         let evaluation_func = Box::new(move |x: &OVector<f64, SS>| {
             let mut y = OVector::<f64, OS>::zeros();
 
-            for (i, &(node1, node2)) in measurement_indices.iter().enumerate() {
+            for (i, &(node1, node2)) in measurement_indices_clone.iter().enumerate() {
                 let x1 = Vector3::new(x[3 * node1], x[3 * node1 + 1], x[3 * node1 + 2]);
                 let x2 = Vector3::new(x[3 * node2], x[3 * node2 + 1], x[3 * node2 + 2]);
                 let distance = (x2 - x1).norm();
@@ -201,20 +204,20 @@ impl NonlinearObservationModel {
 
         let mut observation_matrix = OMatrix::<f64, OS, SS>::zeros();
 
-        for (i, &(node1, node2)) in measurement_indices.iter().enumerate() {
-            let x1 = Vector3::new(state[3 * node1], state[3 * node1 + 1], state[3 * node1 + 2]);
-            let x2 = Vector3::new(state[3 * node2], state[3 * node2 + 1], state[3 * node2 + 2]);
+        for (i, &(a, b)) in measurement_indices.iter().enumerate() {
+            let x1 = Vector3::new(state[3 * a], state[3 * a + 1], state[3 * a + 2]);
+            let x2 = Vector3::new(state[3 * b], state[3 * b + 1], state[3 * b + 2]);
             let delta = x2 - x1;
             let distance = delta.norm();
 
             // if the distance is below the minimum, we expect a measurement of ~zero
-            if distance > self.minimum_distance {
+            if distance > MINIMUM_DISTANCE {
                 let jacobian_row = -delta.transpose() / distance;
                 observation_matrix
-                    .slice_mut((i, 3 * node1), (1, 3))
+                    .view_mut((i, 3 * a), (1, 3))
                     .copy_from(&jacobian_row);
                 observation_matrix
-                    .slice_mut((i, 3 * node2), (1, 3))
+                    .view_mut((i, 3 * b), (1, 3))
                     .copy_from(&jacobian_row);
             }
         }

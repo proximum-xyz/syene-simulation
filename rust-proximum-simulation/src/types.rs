@@ -33,11 +33,6 @@ pub struct Node {
     pub latency: f64,
 }
 
-pub struct Measurement {
-    pub node_indices: (usize, usize),
-    pub distance: f64,
-}
-
 #[derive(Serialize)]
 pub struct Simulation {
     // general simulation parameters

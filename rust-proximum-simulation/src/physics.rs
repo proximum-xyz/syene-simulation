@@ -1,7 +1,8 @@
-use crate::types::{Measurement, Node};
+use crate::{kalman::OS, types::Node};
+use nalgebra::OVector;
 use rand::prelude::*;
 
-const C: f64 = 299_792_458.0; // speed of light in m/s
+// const C: f64 = 299_792_458.0; // speed of light in m/s
 
 // simulate a two-way time of flight measurement to another node
 // the measurement has a basic constant model for signal speed and node latency
@@ -9,8 +10,8 @@ const C: f64 = 299_792_458.0; // speed of light in m/s
 pub fn simulate_distance_measurement(
     n1: &Node,
     n2: &Node,
-    model_signal_speed_fraction: f64,
-    model_node_latency: f64,
+    _model_signal_speed_fraction: f64,
+    _model_node_latency: f64,
 ) -> f64 {
     // True distance
     (n1.true_position - n2.true_position).norm()
@@ -33,43 +34,46 @@ pub fn simulate_distance_measurement(
     // measured_distance
 }
 
-// Simulate a bunch of real world measurements.
+// Simulate a bunch of real world measurements between node pairs.
 pub fn generate_measurements(
     nodes: &[Node],
     n_measurements: usize,
     model_distance_max: f64,
     model_signal_speed_fraction: f64,
     model_node_latency: f64,
-) -> Vec<Measurement> {
+) -> (Vec<(usize, usize)>, OVector<f64, OS>) {
     let mut rng = rand::thread_rng();
-    let mut measurements = Vec::with_capacity(n_measurements);
 
-    for _ in 0..n_measurements {
+    let mut indices: Vec<(usize, usize)> = Vec::new();
+    let mut distances: OVector<f64, OS> = OVector::<f64, OS>::zeros();
+
+    for i in 0..n_measurements {
         // Randomly select two distinct nodes
-        let (index_a, index_b) = loop {
+        let (pair, distance) = loop {
             let indices = (0..nodes.len()).choose_multiple(&mut rng, 2);
-            if indices[0] != indices[1] {
-                break (indices[0], indices[1]);
+            if indices[0] == indices[1] {
+                continue;
             }
+            let node_a = &nodes[indices[0]];
+            let node_b = &nodes[indices[1]];
+
+            if (node_a.true_position - node_b.true_position).norm() > model_distance_max {
+                continue;
+            }
+
+            let measured_distance = simulate_distance_measurement(
+                &node_a,
+                &node_b,
+                model_signal_speed_fraction,
+                model_node_latency,
+            );
+
+            break ((indices[0], indices[1]), measured_distance);
         };
 
-        let node_a = &nodes[index_a];
-        let node_b = &nodes[index_b];
-
-        let distance = simulate_distance_measurement(
-            &node_a,
-            &node_b,
-            model_signal_speed_fraction,
-            model_node_latency,
-        );
-
-        let measurement = Measurement {
-            node_indices: (node_a.id, node_b.id),
-            distance,
-        };
-
-        measurements.push(measurement);
+        indices.push(pair);
+        distances[i] = distance;
     }
 
-    measurements
+    (indices, distances)
 }

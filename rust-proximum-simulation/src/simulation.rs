@@ -1,22 +1,16 @@
-use std::f32::MIN;
-
-use crate::geometry::{clamp_ecef_to_ellipsoid, ecef_to_h3, h3_to_ecef, random_h3_index};
-
+use crate::geometry::{ecef_to_h3, h3_to_ecef, random_h3_index};
 extern crate nav_types;
 use crate::kalman::{
-    NonlinearObservationModel, State, StationaryStateModel, N_MEASUREMENTS, N_NODES, OS, SS,
+    NonlinearObservationModel, State, StationaryStateModel, N_MEASUREMENTS, N_NODES, SS,
 };
-use crate::physics::{generate_measurements, simulate_distance_measurement};
-use crate::types::{Measurement, Node, Simulation};
-use adskalman::{KalmanFilterNoControl, StateAndCovariance};
+use crate::physics::generate_measurements;
+use crate::types::{Node, Simulation};
+use adskalman::KalmanFilterNoControl;
 use h3o::{CellIndex, Resolution};
 use log::info;
-use nalgebra::{Matrix, Matrix2, OMatrix, OVector, Vector1, Vector2, Vector3, U1};
-use nav_types::{ECEF, ENU, WGS84};
-use rand::distributions::Uniform;
-use rand::prelude::*;
-
-const MINIMUM_DISTANCE: f64 = 1.0;
+use nalgebra::{OMatrix, U1};
+use nav_types::{ECEF, WGS84};
+use rand::Rng;
 
 // Track each node in the network
 impl Node {
@@ -26,8 +20,6 @@ impl Node {
         asserted_index: CellIndex,
         channel_speed: f64,
         latency: f64,
-        model_state_variance: f64,
-        model_measurement_variance: f64,
     ) -> Self {
         let true_position = h3_to_ecef(true_index);
 
@@ -77,10 +69,8 @@ impl Simulation {
                 nodes.len(),
                 cell_index,
                 cell_index,
-                draw_from_range(real_channel_speed_min, real_channel_speed_max),
-                draw_from_range(real_latency_min, real_latency_max),
-                model_state_variance,
-                model_measurement_variance,
+                rand::thread_rng().gen_range(real_channel_speed_min..=real_channel_speed_max),
+                rand::thread_rng().gen_range(real_latency_min..=real_latency_max),
             );
             nodes.push(node);
         }
@@ -101,7 +91,7 @@ impl Simulation {
         let state = State::new(initial_state, initial_covariance);
         let state_model = StationaryStateModel::new(model_state_variance);
         let observation_model_generator =
-            NonlinearObservationModel::new(model_measurement_variance, MINIMUM_DISTANCE);
+            NonlinearObservationModel::new(model_measurement_variance);
 
         Simulation {
             nodes,
@@ -123,17 +113,14 @@ impl Simulation {
     }
 
     // Update the estimated position of the node based on new measurements using the Kalman filter
-    fn estimate_positions(&mut self, measurements: Vec<Measurement>) {
-        // let (indices, distances): (Vec<_>, Vec<_>) = measurements
-        //     .into_iter()
-        //     .map(|m| (m.node_indices, m.distance))
-        //     .unzip();
-
-        let distances =
-            OVector::<f64, OS>::from_iterator(measurements.into_iter().map(|m| m.distance));
-
-        let indices: Vec<(usize, usize)> =
-            measurements.into_iter().map(|m| m.node_indices).collect();
+    fn estimate_positions(&mut self) {
+        let (indices, distances) = generate_measurements(
+            &self.nodes,
+            N_MEASUREMENTS,
+            self.model_distance_max,
+            self.model_signal_speed_fraction,
+            self.model_node_latency,
+        );
 
         let observation_model = self
             .observation_model_generator
@@ -150,9 +137,9 @@ impl Simulation {
             .as_slice()
             .chunks_exact(3)
             .enumerate()
-            .map(|(i, chunk)| {
+            .for_each(|(i, chunk)| {
                 let position = ECEF::new(chunk[0], chunk[1], chunk[2]);
-                let clamped_position = clamp_ecef_to_ellipsoid(position);
+                // let clamped_position = clamp_ecef_to_ellipsoid(position);
                 self.nodes[i].update_estimated_position(position);
             });
     }
@@ -161,28 +148,9 @@ impl Simulation {
         info!("Running simulation: for {} epochs!", self.n_epochs);
         for i in 0..self.n_epochs {
             info!("Running epoch {}!", i);
-            let mut measurements: Vec<Measurement> = generate_measurements(
-                &self.nodes,
-                N_MEASUREMENTS,
-                self.model_distance_max,
-                self.model_signal_speed_fraction,
-                self.model_node_latency,
-            );
-
-            self.estimate_positions(measurements);
+            // in each epoch we generate one set of measurements and update node location estimates with these measurements
+            self.estimate_positions();
         }
         true
     }
-}
-
-fn draw_from_range(min: f64, max: f64) -> f64 {
-    if min == max {
-        return min;
-    } else if min > max {
-        panic!("Invalid range: min {} is greater than max {}", min, max);
-    }
-
-    let distribution = Uniform::new(min, max);
-    let mut rng = thread_rng();
-    distribution.sample(&mut rng)
 }
