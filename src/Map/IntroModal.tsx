@@ -50,17 +50,28 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ onClose }) => {
   return (
     <ModalWrapper>
       <ModalContent>
-        <Title>Proximum Simulator</Title>
+        <Title>Proximum Simulation</Title>
         <Description>
-          The Proximum Simulator is a tool for simulating and analyzing proximity-based networks. It allows you to configure various parameters and observe the behavior of the network under different conditions.
+          This app simulates the Proximum location network -- think GPS, but onchain.
+          <h3>How do I use it?</h3>
+          <p>Click on the map to drop a user there. Proximum estimates their location by pinging local nodes.</p>
+          <ul>
+            <li><strong>Blue dot</strong>: real locations</li>
+            <li><strong>Orange dot</strong>: estimated locations</li>
+            <li><strong>Gray lines</strong>: paths to nearby nodes</li>
+          </ul>
+          <p>
+            Configure network parameters to see how they affect the accuracy of position estimates.</p>
+          <ul>
+            <li>
+              <strong>Physical Parameters</strong> define the real network of nodes.
+            </li>
+            <li>
+              <strong>Model Parameters</strong> define Proximum&apos;s internal simplified network model.
+            </li>
+          </ul>
         </Description>
-        <h3>Parameter Details</h3>
-        <ul>
-          <li>H3 Resolution: The resolution level of the H3 hexagonal grid system used for spatial indexing.</li>
-          <li>Number of Nodes: The total number of nodes in the network.</li>
-          {/* Add descriptions for the remaining parameters */}
-        </ul>
-        <CloseButton onClick={onClose}>Close</CloseButton>
+        <CloseButton onClick={onClose}>Start</CloseButton>
       </ModalContent>
     </ModalWrapper>
   );

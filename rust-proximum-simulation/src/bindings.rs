@@ -36,8 +36,7 @@ pub fn simulate(
         realChannelSpeedMax,
         realLatencyMin,
         realLatencyMax,
-        // convert km to m
-        modelDistanceMax * 1000,
+        modelDistanceMax,
         modelStateNoiseScale,
         modelMeasurementVariance,
         modelSignalSpeedFraction,

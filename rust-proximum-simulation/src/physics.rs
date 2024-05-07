@@ -1,4 +1,5 @@
 use crate::{kalman::OS, types::Node};
+use log::{info, trace};
 use nalgebra::OVector;
 use rand::prelude::*;
 
@@ -42,6 +43,8 @@ pub fn generate_measurements(
     model_signal_speed_fraction: f64,
     model_node_latency: f64,
 ) -> (Vec<(usize, usize)>, OVector<f64, OS>) {
+    info!("Generating {} measurements", n_measurements);
+
     let mut rng = rand::thread_rng();
 
     let mut indices: Vec<(usize, usize)> = Vec::new();
@@ -49,15 +52,23 @@ pub fn generate_measurements(
 
     for i in 0..n_measurements {
         // Randomly select two distinct nodes
+        trace!("Generating measurement {}/{}: ", i + 1, n_measurements);
         let (pair, distance) = loop {
             let indices = (0..nodes.len()).choose_multiple(&mut rng, 2);
             if indices[0] == indices[1] {
+                trace!("Message to self (node {}), retrying", indices[0]);
                 continue;
             }
             let node_a = &nodes[indices[0]];
             let node_b = &nodes[indices[1]];
 
             if (node_a.true_position - node_b.true_position).norm() > model_distance_max {
+                trace!(
+                    "Nodes too far apart ({} m > max: {} m), retrying",
+                    (node_a.true_position - node_b.true_position).norm(),
+                    model_distance_max
+                );
+                // TODO: handle special case where no nodes are close enough - currently this creates an infinite loop
                 continue;
             }
 

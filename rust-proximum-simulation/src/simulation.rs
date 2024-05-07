@@ -122,15 +122,28 @@ impl Simulation {
             self.model_node_latency,
         );
 
+        info!(
+            "Generating {} measurements: indices: {:#?}, distances: {}",
+            indices.len(),
+            indices,
+            distances
+        );
+
         let observation_model = self
             .observation_model_generator
             .linearize_at(&self.state.state(), indices);
 
+        info!("built observation model");
+
         let kf = KalmanFilterNoControl::new(&self.state_model, &observation_model);
+
+        info!("built kalman filter");
 
         self.state = kf
             .step(&self.state, &distances)
             .expect("bad kalman filter step");
+
+        info!("finished Kalman filter step");
 
         self.state
             .state()
@@ -142,6 +155,8 @@ impl Simulation {
                 // let clamped_position = clamp_ecef_to_ellipsoid(position);
                 self.nodes[i].update_estimated_position(position);
             });
+
+        info!("updated positions of all nodes");
     }
 
     pub fn run_simulation(&mut self) -> bool {

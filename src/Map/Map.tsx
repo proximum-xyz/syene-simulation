@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 // import * as h3 from 'h3-js';
-import init, { simulate, get_compile_parameters } from 'rust-proximum-simulation';
+import init, { simulate, get_compile_parameters, initSync } from 'rust-proximum-simulation';
 import SimulationControls, { SimulationParams } from './SimulationControls';
 import { CompileParameters, Node } from '../types';
 import IntroModal from './IntroModal';
@@ -31,13 +31,17 @@ const Map = () => {
       simulationParams.h3Resolution,
       simulationParams.realChannelSpeed[0],
       simulationParams.realChannelSpeed[1],
-      simulationParams.realLatency[0],
-      simulationParams.realLatency[1],
-      simulationParams.modelDistanceMax,
+      // convert µs to seconds
+      simulationParams.realLatency[0] * 1e-6,
+      // convert µs to seconds
+      simulationParams.realLatency[1] * 1e-6,
+      // convert km to meters
+      simulationParams.modelDistanceMax * 1000,
       simulationParams.modelStateNoiseScale,
       simulationParams.modelMeasurementVariance,
       simulationParams.modelSignalSpeedFraction,
-      simulationParams.modelNodeLatency,
+      // convert µs to seconds
+      simulationParams.modelNodeLatency * 1e-6,
       simulationParams.nEpochs,
     );
 

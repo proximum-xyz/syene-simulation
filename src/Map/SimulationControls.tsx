@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 import ReactMarkdown from 'react-markdown';
+import { time } from 'console';
 
 export interface SimulationParams {
   h3Resolution: number;
@@ -19,14 +20,21 @@ export interface SimulationParams {
 
 const defaultSimulationParams: SimulationParams = {
   h3Resolution: 7,
-  realChannelSpeed: [0.7, 0.95],
-  realLatency: [20000, 40000],
-  modelDistanceMax: 1_000.0,
-  modelStateNoiseScale: 1,
-  modelMeasurementVariance: 10.0,
+  // c
+  realChannelSpeed: [0.7, 1],
+  // µs
+  realLatency: [20000, 30000],
+  // km
+  modelDistanceMax: 1_000_000.0,
+  // m²
+  modelStateNoiseScale: 0.1,
+  // m²
+  modelMeasurementVariance: 1.0,
+  // c
   modelSignalSpeedFraction: 0.85,
-  modelNodeLatency: 30000,
-  nEpochs: 10,
+  // µs
+  modelNodeLatency: 25000,
+  nEpochs: 1,
 };
 
 const ControlsWrapper = styled.div`
@@ -206,7 +214,7 @@ type FormDescriptor = {
 
 const titleTexts: FormDescriptor = {
   nNodes: 'Nodes',
-  nMeasurements: 'Distance Measurements',
+  nMeasurements: 'Measurements',
   h3Resolution: 'H3 Resolution',
   realChannelSpeed: 'Real Message Speed (c)',
   realLatency: 'Real Latency (µs)',
@@ -220,10 +228,20 @@ const titleTexts: FormDescriptor = {
 
 const helpTexts: FormDescriptor = {
   nNodes: `
-  The number of nodes participating in the simulation. Each node asserts a unique position and measures distances to other nodes using a trustless time-of-flight algorithm.
+  The number of nodes participating in the simulation.
+  
+  Each node asserts a unique position and measures distances to other nodes using a trustless time-of-flight algorithm.
+
+  Increasing the number of nodes improves position accuracy and computational difficulty.
+
+  This parameter is set during compilation and cannot be changed here currently.
   `,
   nMeasurements: `
-  The number of distance measurements per position estimation. Increasing the number of measurements improves position accuracy and computational difficulty.
+  The number of distance measurements between node pairs used within each position estimation.
+  
+  Increasing the number of measurements improves position accuracy and computational difficulty.
+
+  This parameter is set during compilation and cannot be changed here currently.
   `,
   h3Resolution: `
   The resolution of the H3 grid used by nodes asserting a position. Explore H3 resolutions [here](https://wolf-h3-viewer.glitch.me/).
@@ -279,9 +297,11 @@ const helpTexts: FormDescriptor = {
   Proximum models node latency as a constant value when estimating distances within the Extended Kalman Filter.
   `,
   nEpochs: `
-  The number of epochs to run the simulation for. Each epoch consists of a set of distance measurements and a position estimation step. Increasing the number of epochs improves position accuracy but also increases computational difficulty.
+  The number of epochs for which to run the simulation.
+  
+  Each epoch consists of a set of distance measurements defined by the *Measurements* parameter and a position estimation step. Increasing the number of epochs improves position accuracy but also increases computational difficulty.
 
-  You can think of each epoch as a single network "block" on the blockchain (although in practice they may not map 1:1).
+  You can think of each epoch as a single block on the blockchain (although in practice they may not map 1:1).
   `,
 };
 
@@ -298,9 +318,10 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
 
   const [helpParameterName, setHelpParameterName] = useState<FieldKeys | null>(null);
 
-  const onSubmit = (params: SimulationParams) => {
+  const onSubmit = async (params: SimulationParams) => {
     setIsSimulating(true);
     runSimulation(params);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     setIsSimulating(false);
   };
 
@@ -371,7 +392,19 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
       <ControlsWrapper>
         <h2>Proximum Simulation</h2>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <SectionHeader>Network Parameters</SectionHeader>
+          <FormGroup>
+            <Label>
+              {titleTexts['nEpochs']}
+              <HelpIcon onClick={() => showHelpText('nEpochs')}>&#9432;</HelpIcon>
+            </Label>
+            <Controller
+              name="nEpochs"
+              control={control}
+              render={({ field }) => <Input type="number" step="1" {...field} />}
+            />
+          </FormGroup>
+
+          <SectionHeader>Physical Parameters</SectionHeader>
           <FormGroup>
             <Label>
               {titleTexts['nNodes']}
@@ -386,7 +419,7 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
             </Label>
             <ReadOnlyValue>{nMeasurements}</ReadOnlyValue>
           </FormGroup>
-          <FormGroup>
+          {/* <FormGroup>
             <Label>
               {titleTexts['h3Resolution']}
               <HelpIcon onClick={() => showHelpText('h3Resolution')}>&#9432;</HelpIcon>
@@ -396,7 +429,7 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
               control={control}
               render={({ field }) => <Input type="number" step="1" {...field} />}
             />
-          </FormGroup>
+          </FormGroup> */}
           <FormGroup>
             <Label>
               {titleTexts['realChannelSpeed']}
@@ -409,7 +442,7 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
               {titleTexts['realLatency']}
               <HelpIcon onClick={() => showHelpText('realLatency')}>&#9432;</HelpIcon>
             </Label>
-            {renderSliderInput('realLatency', 0, 100000, 1)}
+            {renderSliderInput('realLatency', 0, 30000, 1)}
           </FormGroup>
           <FormGroup>
             <Label>
@@ -422,41 +455,9 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
               render={({ field }) => <Input type="number" step="1" {...field} />}
             />
           </FormGroup>
-          <FormGroup>
-            <Label>
-              {titleTexts['nEpochs']}
-              <HelpIcon onClick={() => showHelpText('nEpochs')}>&#9432;</HelpIcon>
-            </Label>
-            <Controller
-              name="nEpochs"
-              control={control}
-              render={({ field }) => <Input type="number" step="1" {...field} />}
-            />
-          </FormGroup>
-          <SectionHeader>Location Estimation</SectionHeader>
 
-          <FormGroup>
-            <Label>
-              {titleTexts['modelStateNoiseScale']}
-              <HelpIcon onClick={() => showHelpText('modelStateNoiseScale')}>&#9432;</HelpIcon>
-            </Label>
-            <Controller
-              name="modelStateNoiseScale"
-              control={control}
-              render={({ field }) => <Input type="number" step="0.1" {...field} />}
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>
-              {titleTexts['modelMeasurementVariance']}
-              <HelpIcon onClick={() => showHelpText('modelMeasurementVariance')}>&#9432;</HelpIcon>
-            </Label>
-            <Controller
-              name="modelMeasurementVariance"
-              control={control}
-              render={({ field }) => <Input type="number" step="0.1" {...field} />}
-            />
-          </FormGroup>
+          <SectionHeader>Model Parameters</SectionHeader>
+
           <FormGroup>
             <Label>
               {titleTexts['modelSignalSpeedFraction']}
@@ -480,6 +481,29 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
             />
           </FormGroup>
 
+          <FormGroup>
+            <Label>
+              {titleTexts['modelStateNoiseScale']}
+              <HelpIcon onClick={() => showHelpText('modelStateNoiseScale')}>&#9432;</HelpIcon>
+            </Label>
+            <Controller
+              name="modelStateNoiseScale"
+              control={control}
+              render={({ field }) => <Input type="number" step="0.1" {...field} />}
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>
+              {titleTexts['modelMeasurementVariance']}
+              <HelpIcon onClick={() => showHelpText('modelMeasurementVariance')}>&#9432;</HelpIcon>
+            </Label>
+            <Controller
+              name="modelMeasurementVariance"
+              control={control}
+              render={({ field }) => <Input type="number" step="0.1" {...field} />}
+            />
+          </FormGroup>
+
           {isSimulating ? <ProgressIndicator /> : <Button type="submit" disabled={isSimulating}>Simulate</Button>}
 
         </form>
@@ -489,7 +513,7 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
           <HelpTextTitle>{titleTexts[helpParameterName]}</HelpTextTitle>
           <HelpTextContent>
             <ReactMarkdown>
-              {helpTexts[helpParameterName]}
+              {helpTexts[helpParameterName] + "\n\nSee the [Proximum lightpaper](https://www.proximum.xyz/proximum-lightpaper.pdf) for more information."}
             </ReactMarkdown>
           </HelpTextContent>
           <CloseButton onClick={closeHelpText}>Close</CloseButton>
