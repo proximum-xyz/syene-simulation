@@ -18,6 +18,7 @@ export interface SimulationParams {
   nEpochs: number;
 }
 
+
 const defaultSimulationParams: SimulationParams = {
   h3Resolution: 7,
   // c
@@ -34,7 +35,7 @@ const defaultSimulationParams: SimulationParams = {
   modelSignalSpeedFraction: 0.85,
   // µs
   modelNodeLatency: 25000,
-  nEpochs: 1,
+  nEpochs: 10,
 };
 
 const ControlsWrapper = styled.div`

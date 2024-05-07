@@ -4,13 +4,39 @@ use crate::kalman::{
     NonlinearObservationModel, State, StationaryStateModel, N_MEASUREMENTS, N_NODES, SS,
 };
 use crate::physics::generate_measurements;
-use crate::types::{Node, Simulation};
+use crate::types::{Node, Simulation, Stats};
 use adskalman::KalmanFilterNoControl;
 use h3o::{CellIndex, Resolution};
 use log::info;
 use nalgebra::{OMatrix, U1};
 use nav_types::{ECEF, WGS84};
 use rand::Rng;
+
+fn calculate_rms_error(nodes: &[Node]) -> f64 {
+    let mut squared_diff_sum = 0.0;
+
+    for node in nodes {
+        // let true_pos = Vector3::new(
+        //     node.true_position.x(),
+        //     node.true_position.y(),
+        //     node.true_position.z(),
+        // );
+        // let estimated_pos = Vector3::new(
+        //     node.estimated_position.x(),
+        //     node.estimated_position.y(),
+        //     node.estimated_position.z(),
+        // );
+
+        let diff = node.true_position - node.estimated_position;
+        let squared_diff = diff.norm().powi(2);
+        squared_diff_sum += squared_diff;
+    }
+
+    let rms_error = squared_diff_sum / nodes.len() as f64;
+    let rms_error = rms_error.sqrt();
+
+    rms_error
+}
 
 // Track each node in the network
 impl Node {
@@ -106,6 +132,9 @@ impl Simulation {
             model_signal_speed_fraction,
             model_node_latency,
             n_epochs,
+            stats: Stats {
+                rms_error: Vec::new(),
+            },
             state_model,
             observation_model_generator: observation_model_generator,
             state,
@@ -165,6 +194,9 @@ impl Simulation {
             info!("Running epoch {}!", i);
             // in each epoch we generate one set of measurements and update node location estimates with these measurements
             self.estimate_positions();
+
+            // calculate the mean squared error for this epoch
+            self.stats.rms_error.push(calculate_rms_error(&self.nodes));
         }
         true
     }

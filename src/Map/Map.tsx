@@ -5,16 +5,17 @@ import L from 'leaflet';
 // import * as h3 from 'h3-js';
 import init, { simulate, get_compile_parameters, initSync } from 'rust-proximum-simulation';
 import SimulationControls, { SimulationParams } from './SimulationControls';
-import { CompileParameters, Node } from '../types';
+import { CompileParameters, Node, Simulation } from '../types';
 import IntroModal from './IntroModal';
 import GeodesicLine from './GeodesicLine';
+import Stats from './Stats';
 
 function rad2deg(radians: number) {
   return radians * 180 / Math.PI;
 }
 
 const Map = () => {
-  const [nodes, setNodes] = useState<Node[]>([]);
+  const [simulation, setSimulation] = useState<Simulation>();
   const [showIntroModal, setShowIntroModal] = useState(true);
   const [compileParameters, setCompilerParameters] = useState<CompileParameters>();
 
@@ -46,7 +47,7 @@ const Map = () => {
     );
 
     const sim = JSON.parse(simString);
-    setNodes(sim.nodes);
+    setSimulation(sim);
   }
 
   const closeIntroModal = () => setShowIntroModal(false);
@@ -56,12 +57,11 @@ const Map = () => {
     return <IntroModal onClose={closeIntroModal} />;
   }
 
-  const nodeContent = nodes.map((node, i) => {
-    if (nodes.length === 0) return null;
+  const nodeContent = (simulation && simulation.nodes.length > 0) ? simulation.nodes.map((node, i) => {
     const trueLatLngDeg = [node.true_wgs84.latitude, node.true_wgs84.longitude].map(rad2deg) as [number, number];
     const estLatLngDeg = [node.estimated_wgs84.latitude, node.estimated_wgs84.longitude].map(rad2deg) as [number, number];
 
-    const node0TrueLatLngDeg = [nodes[0].true_wgs84.latitude, nodes[0].true_wgs84.longitude].map(rad2deg) as [number, number]
+    const node0TrueLatLngDeg = [simulation.nodes[0].true_wgs84.latitude, simulation.nodes[0].true_wgs84.longitude].map(rad2deg) as [number, number]
 
     return (
       <React.Fragment key={i}>
@@ -77,7 +77,7 @@ const Map = () => {
         })} />
       </React.Fragment>
     );
-  });
+  }) : null;
 
   return (
     <>
@@ -95,6 +95,7 @@ const Map = () => {
         {/* <Pane name="custom-control-pane" style={{ zIndex: 1000000, position: 'absolute', top: 0, left: 0, height: '100%', width: '100%' }}> */}
         {compileParameters && <div style={{ zIndex: 1000000, position: 'absolute', top: 0, left: 0, height: '100%', width: '100%' }}>
           <SimulationControls runSimulation={runSimulation} nNodes={compileParameters.n_nodes} nMeasurements={compileParameters.n_measurements} />
+          {simulation && <Stats simulation={simulation} />}
         </div>}
         {/* </Pane> */}
       </MapContainer >

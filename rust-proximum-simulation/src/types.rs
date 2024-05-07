@@ -40,6 +40,12 @@ pub struct Node {
 }
 
 #[derive(Serialize)]
+pub struct Stats {
+    // simulation stats for each epoch
+    pub rms_error: Vec<f64>,
+}
+
+#[derive(Serialize)]
 pub struct Simulation {
     // general simulation parameters
     pub nodes: Vec<Node>,
@@ -57,6 +63,7 @@ pub struct Simulation {
     pub model_node_latency: f64,
     // simulation parameters (note that the numbers of nodes and measurements are compiler flags)
     pub n_epochs: usize,
+    pub stats: Stats,
     // kalman filter implementation
     #[serde(skip)]
     pub state_model: StationaryStateModel<f64>,

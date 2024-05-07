@@ -22,6 +22,10 @@ export interface Node {
   latency: number;
 }
 
+export interface Stats {
+  rms_error: number[];
+}
+
 export interface Simulation {
   nodes: Node[];
   h3_resolution: number;
@@ -34,5 +38,6 @@ export interface Simulation {
   model_measurement_variance: number;
   model_signal_speed_fraction: number;
   model_node_latency: number;
+  stats: Stats,
   n_epochs: number;
 }

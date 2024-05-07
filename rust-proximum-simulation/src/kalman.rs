@@ -1,9 +1,9 @@
 use adskalman::{ObservationModel, StateAndCovariance, TransitionModelLinearNoControl};
 #[allow(unused_imports)]
-use nalgebra::{DimMin, OVector, Vector2, Vector3, Vector4, U1, U10, U100, U30, U6};
-// use typenum::U300;
+use nalgebra::{Dim, DimMin, OVector, Vector2, Vector3, Vector4, U1, U10, U100, U30, U50, U6};
+use typenum::U300;
 
-use nalgebra::{allocator::Allocator, DefaultAllocator, OMatrix, RealField};
+use nalgebra::{allocator::Allocator, DefaultAllocator, Matrix, OMatrix, RealField, U120};
 
 // State size is 3 * n: each node stores an [x, y, z] position in ECEF coordinates
 #[cfg(n_nodes = "2")]
@@ -16,10 +16,10 @@ pub type SS = U30;
 #[cfg(n_nodes = "10")]
 pub const N_NODES: usize = 10;
 
-#[cfg(n_nodes = "100")]
-pub type SS = U300;
-#[cfg(n_nodes = "100")]
-pub const N_NODES: usize = 100;
+#[cfg(n_nodes = "40")]
+pub type SS = U120;
+#[cfg(n_nodes = "40")]
+pub const N_NODES: usize = 120;
 
 // Observation size is the number of distance measurements
 #[cfg(n_measurements = "1")]
@@ -32,10 +32,10 @@ pub type OS = U10;
 #[cfg(n_measurements = "10")]
 pub const N_MEASUREMENTS: usize = 10;
 
-#[cfg(n_measurements = "100")]
-pub type OS = U100;
-#[cfg(n_measurements = "100")]
-pub const N_MEASUREMENTS: usize = 100;
+#[cfg(n_measurements = "50")]
+pub type OS = U50;
+#[cfg(n_measurements = "50")]
+pub const N_MEASUREMENTS: usize = 50;
 
 // Minimum distance between nodes for a valid measurement
 const MINIMUM_DISTANCE: f64 = 100.0;
