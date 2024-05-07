@@ -4,6 +4,11 @@ export interface WGS84 {
   altitude: number;
 }
 
+export interface CompileParameters {
+  n_nodes: number;
+  n_measurements: number;
+}
+
 export interface Node {
   id: number;
   true_index: number;

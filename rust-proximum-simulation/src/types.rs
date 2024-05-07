@@ -18,6 +18,12 @@ mod serialize_ecef {
 }
 
 #[derive(Serialize)]
+pub struct CompileParameters {
+    pub n_nodes: usize,
+    pub n_measurements: usize,
+}
+
+#[derive(Serialize)]
 pub struct Node {
     pub id: usize,
     pub true_index: CellIndex,

@@ -1,5 +1,8 @@
 #![allow(non_snake_case)]
-use crate::types::Simulation;
+use crate::{
+    kalman::{N_MEASUREMENTS, N_NODES},
+    types::{CompileParameters, Simulation},
+};
 use console_log::init_with_level;
 use log::LevelFilter;
 use serde_json;
@@ -33,7 +36,8 @@ pub fn simulate(
         realChannelSpeedMax,
         realLatencyMin,
         realLatencyMax,
-        modelDistanceMax,
+        // convert km to m
+        modelDistanceMax * 1000,
         modelStateNoiseScale,
         modelMeasurementVariance,
         modelSignalSpeedFraction,
@@ -50,4 +54,14 @@ pub fn simulate(
 
     // TODO: figure out how to handle the H3 indices which are blowing up the serialization
     // to_value(&simulation).unwrap()
+}
+
+#[wasm_bindgen]
+pub fn get_compile_parameters() -> String {
+    let parameters: CompileParameters = CompileParameters {
+        n_nodes: N_NODES,
+        n_measurements: N_MEASUREMENTS,
+    };
+    let json = serde_json::to_string(&parameters).unwrap();
+    json
 }

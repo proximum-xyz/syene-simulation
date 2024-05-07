@@ -14,7 +14,7 @@ pub fn simulate_distance_measurement(
     _model_node_latency: f64,
 ) -> f64 {
     // True distance
-    (n1.true_position - n2.true_position).norm()
+    (n1.true_position - n2.true_position).norm() * 1.1
 
     // Todo: add noise
 
