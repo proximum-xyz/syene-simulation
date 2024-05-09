@@ -14,6 +14,29 @@ function rad2deg(radians: number) {
   return radians * 180 / Math.PI;
 }
 
+// function estimateStackLimit() {
+//   let depth = 0;
+//   const stackSize = 1024; // Adjust this value based on your stack usage estimation
+
+//   function recurse() {
+//     depth++;
+//     const buffer = new ArrayBuffer(stackSize); // Allocate memory on the stack
+//     try {
+//       recurse();
+//     } catch (e) {
+//       console.log("Stack depth limit:", depth);
+//       console.log("Estimated stack memory limit:", depth * stackSize, "bytes");
+//     }
+//   }
+
+//   try {
+//     recurse();
+//   } catch (e) {
+//     console.log("Stack depth limit:", depth);
+//     console.log("Estimated stack memory limit:", depth * stackSize, "bytes");
+//   }
+// }
+
 const Map = () => {
   const [simulation, setSimulation] = useState<Simulation>();
   const [showIntroModal, setShowIntroModal] = useState(true);
@@ -21,13 +44,22 @@ const Map = () => {
 
   useEffect(() => {
     (async () => {
-      await init(); // initialize WASM code
+      const wasm = await init(); // initialize WASM code
+
+      // console.log('*** before grow', { ml: wasm.memory.buffer.byteLength });
+
+      // wasm.memory.grow(50000); // grow the memory buffer by 100 pages
+
+      // console.log('*** after grow', { ml: wasm.memory.buffer.byteLength });
+
+      // get the compile parameters from the WASM code
       const compileParameters = JSON.parse(get_compile_parameters());
       setCompilerParameters(compileParameters);
     })()
   }, []);
 
   function runSimulation(simulationParams: SimulationParams) {
+    // estimateStackLimit();
     const simString = simulate(
       simulationParams.h3Resolution,
       simulationParams.realChannelSpeed[0],

@@ -1,4 +1,4 @@
-use crate::kalman::{NonlinearObservationModel, State, StationaryStateModel};
+use crate::kalman::{MyStateAndCovariance, NonlinearObservationModel, StationaryStateModel};
 use h3o::CellIndex;
 use serde::Serialize;
 extern crate nav_types;
@@ -64,11 +64,4 @@ pub struct Simulation {
     // simulation parameters (note that the numbers of nodes and measurements are compiler flags)
     pub n_epochs: usize,
     pub stats: Stats,
-    // kalman filter implementation
-    #[serde(skip)]
-    pub state_model: StationaryStateModel<f64>,
-    #[serde(skip)]
-    pub observation_model_generator: NonlinearObservationModel,
-    #[serde(skip)]
-    pub state: State,
 }

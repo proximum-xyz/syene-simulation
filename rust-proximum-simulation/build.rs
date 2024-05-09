@@ -1,6 +1,6 @@
 fn main() {
     // the number of nodes with positions estimated by Kalman filter state
-    let n_nodes = 10;
+    let n_nodes = 100;
     // The number of distance measurements between nodes per Kalman filter observation
     let n_measurements = 10;
 

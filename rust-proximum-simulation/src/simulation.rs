@@ -1,14 +1,16 @@
 use crate::geometry::{ecef_to_h3, h3_to_ecef, random_h3_index};
 extern crate nav_types;
 use crate::kalman::{
-    NonlinearObservationModel, State, StationaryStateModel, N_MEASUREMENTS, N_NODES, SS,
+    update, NonlinearObservationModel, StationaryStateModel, N_MEASUREMENTS, N_NODES, OS, SS,
 };
 use crate::physics::generate_measurements;
 use crate::types::{Node, Simulation, Stats};
-use adskalman::KalmanFilterNoControl;
+use adskalman::{KalmanFilterNoControl, StateAndCovariance};
 use h3o::{CellIndex, Resolution};
 use log::info;
-use nalgebra::{OMatrix, U1};
+use nalgebra::{
+    Const, DMatrix, DVector, DimName, Dyn, Dynamic, Matrix, OMatrix, OVector, VecStorage, U1, U6,
+};
 use nav_types::{ECEF, WGS84};
 use rand::Rng;
 
@@ -101,24 +103,6 @@ impl Simulation {
             nodes.push(node);
         }
 
-        let initial_state_iterator = nodes.iter().flat_map(|node| {
-            [
-                node.true_position.x(),
-                node.true_position.y(),
-                node.true_position.z(),
-            ]
-        });
-
-        let initial_state = OMatrix::<f64, SS, U1>::from_iterator(initial_state_iterator);
-
-        let initial_covariance = OMatrix::<f64, SS, SS>::identity() * model_state_variance;
-
-        // Initialize the state of the Kalman filter with the asserted positions.
-        let state = State::new(initial_state, initial_covariance);
-        let state_model = StationaryStateModel::new(model_state_variance);
-        let observation_model_generator =
-            NonlinearObservationModel::new(model_measurement_variance);
-
         Simulation {
             nodes,
             h3_resolution,
@@ -135,14 +119,16 @@ impl Simulation {
             stats: Stats {
                 rms_error: Vec::new(),
             },
-            state_model,
-            observation_model_generator: observation_model_generator,
-            state,
         }
     }
 
     // Update the estimated position of the node based on new measurements using the Kalman filter
-    fn estimate_positions(&mut self) {
+    fn estimate_positions(
+        &mut self,
+        observation_model_generator: &NonlinearObservationModel,
+        state_model: &StationaryStateModel<f64>,
+        state: &mut StateAndCovariance<f64, SS>,
+    ) {
         let (indices, distances) = generate_measurements(
             &self.nodes,
             N_MEASUREMENTS,
@@ -152,29 +138,28 @@ impl Simulation {
         );
 
         info!(
-            "Generating {} measurements: indices: {:#?}, distances: {}",
+            "Simulated {} measurements: indices: {:#?}, distances: {}",
             indices.len(),
             indices,
             distances
         );
 
-        let observation_model = self
-            .observation_model_generator
-            .linearize_at(&self.state.state(), indices);
+        let observation_model = observation_model_generator.linearize_at(state.state(), indices);
 
         info!("built observation model");
 
-        let kf = KalmanFilterNoControl::new(&self.state_model, &observation_model);
+        let kf = KalmanFilterNoControl::new(state_model, &observation_model);
 
         info!("built kalman filter");
 
-        self.state = kf
-            .step(&self.state, &distances)
-            .expect("bad kalman filter step");
+        // *self.state =
+        //     update(&observation_model, &self.state, &distances).expect("bad kalman filter step");
+
+        // *state = kf.step(&state, &distances).expect("bad kalman filter step");
 
         info!("finished Kalman filter step");
 
-        self.state
+        state
             .state()
             .as_slice()
             .chunks_exact(3)
@@ -190,14 +175,34 @@ impl Simulation {
 
     pub fn run_simulation(&mut self) -> bool {
         info!("Running simulation: for {} epochs!", self.n_epochs);
-        for i in 0..self.n_epochs {
-            info!("Running epoch {}!", i);
-            // in each epoch we generate one set of measurements and update node location estimates with these measurements
-            self.estimate_positions();
 
-            // calculate the mean squared error for this epoch
-            self.stats.rms_error.push(calculate_rms_error(&self.nodes));
-        }
+        let initial_state_iterator = self.nodes.iter().flat_map(|node| {
+            [
+                node.true_position.x(),
+                node.true_position.y(),
+                node.true_position.z(),
+            ]
+        });
+
+        let initial_state = DVector::<f64>::from_iterator(SS::dim(), initial_state_iterator);
+
+        let initial_covariance =
+            DMatrix::<f64>::identity(SS::dim(), SS::dim()) * self.model_state_variance;
+
+        // Initialize the state of the Kalman filter with the asserted positions.
+        let mut state = Box::new(StateAndCovariance::new(initial_state, initial_covariance));
+        // let state_model = StationaryStateModel::new(self.model_state_variance);
+        // let observation_model_generator =
+        //     NonlinearObservationModel::new(self.model_measurement_variance);
+
+        // for i in 0..self.n_epochs {
+        //     info!("Running epoch {}!", i);
+        //     // in each epoch we generate one set of measurements and update node location estimates with these measurements
+        //     self.estimate_positions(&observation_model_generator, &state_model, &mut state);
+
+        //     // calculate the mean squared error for this epoch
+        //     self.stats.rms_error.push(calculate_rms_error(&self.nodes));
+        // }
         true
     }
 }

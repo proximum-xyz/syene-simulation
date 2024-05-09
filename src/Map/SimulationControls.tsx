@@ -321,9 +321,14 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
 
   const onSubmit = async (params: SimulationParams) => {
     setIsSimulating(true);
-    runSimulation(params);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSimulating(false);
+    try {
+      runSimulation(params);
+    } catch (e) {
+      console.error(e);
+      alert(e);
+    } finally {
+      setIsSimulating(false);
+    }
   };
 
   const showHelpText = (parameterName: FieldKeys) => {
