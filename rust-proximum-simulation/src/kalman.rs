@@ -1,39 +1,22 @@
-use adskalman::{
-    CovarianceUpdateMethod, Error, ErrorKind, ObservationModel, StateAndCovariance,
-    TransitionModelLinearNoControl,
-};
-use log::trace;
-#[allow(unused_imports)]
+use adskalman::{ObservationModel, TransitionModelLinearNoControl};
+use nalgebra::DimName;
 use nalgebra::{
-    allocator::Allocator, Const, DMatrix, DefaultAllocator, Dim, DimMin, Dyn, Matrix, OMatrix,
-    OVector, RealField, Vector2, Vector3, Vector4, U1, U10, U100, U120, U30, U50, U6,
+    allocator::Allocator, Const, DefaultAllocator, DimMin, OMatrix, OVector, RealField,
 };
-use num_traits::identities::One;
 
-// State size is 3 * n: each node stores an [x, y, z] position in ECEF coordinates
-#[cfg(n_nodes = "2")]
-pub type SS = Const<6>;
-#[cfg(n_nodes = "2")]
-pub const N_NODES: usize = 2;
+use crate::types::Node;
 
-#[cfg(n_nodes = "10")]
-pub type SS = U30;
-#[cfg(n_nodes = "10")]
-pub const N_NODES: usize = 10;
-
-#[cfg(n_nodes = "100")]
-pub type SS = Const<300>;
-#[cfg(n_nodes = "100")]
-pub const N_NODES: usize = 100;
+// Calculate the position of one node.
+pub type SS = Const<3>;
 
 // Observation size is the number of distance measurements
 #[cfg(n_measurements = "1")]
-pub type OS = U1;
+pub type OS = Const<1>;
 #[cfg(n_measurements = "1")]
 pub const N_MEASUREMENTS: usize = 1;
 
 #[cfg(n_measurements = "10")]
-pub type OS = U10;
+pub type OS = Const<10>;
 #[cfg(n_measurements = "10")]
 pub const N_MEASUREMENTS: usize = 10;
 
@@ -53,12 +36,10 @@ pub type OS = Const<100>;
 pub const N_MEASUREMENTS: usize = 100;
 
 // Minimum distance between nodes for a valid measurement
-const MINIMUM_DISTANCE: f64 = 100.0;
+const MINIMUM_DISTANCE: f64 = 1.0;
 
 // We use the same precision for all numbers
 type Precision = f64;
-
-pub type MyStateAndCovariance = StateAndCovariance<f64, SS>;
 
 // State update model (nothing moves)
 pub struct StationaryStateModel<R>
@@ -77,7 +58,6 @@ where
     R: RealField + Copy,
 {
     pub fn new(noise_scale: R) -> Self {
-        // Allocate on the heap to avoid stack overflow for large matrices
         let transition_model = OMatrix::<R, SS, SS>::identity();
         let transition_noise_covariance = OMatrix::<R, SS, SS>::identity() * noise_scale;
         let transition_model_transpose = transition_model.transpose();
@@ -109,61 +89,62 @@ where
     }
 }
 
-pub struct NonlinearObservationModel {
-    observation_noise_covariance: f64,
-}
+pub struct NonlinearObservationModel {}
 
 impl NonlinearObservationModel {
-    pub fn new(observation_noise_covariance: f64) -> Self {
-        Self {
-            observation_noise_covariance: observation_noise_covariance,
-        }
+    pub fn new() -> Self {
+        Self {}
     }
 
-    // Get the evaluation function and Jacobian of the observation model for a slice of nodes.
+    // Get the evaluation function and Jacobian of the observation model for one node at the node index measuring distances to other nodes
+    // Note: the linearization is obviously only useful for the specified node indices and positions!
     pub fn linearize_at(
         &self,
-        state: &OVector<f64, SS>,
-        measurement_indices: Vec<(usize, usize)>,
-        // measurement_indices: [(usize, usize); N_MEASUREMENTS],
+        nodes: &Vec<Node>,
+        my_index: usize,
+        their_indices: Vec<usize>,
+        observation_noise_covariance: f64,
     ) -> LinearizedObservationModel {
-        let measurement_indices_clone = measurement_indices.clone();
-        let evaluation_func = Box::new(move |x: &OVector<f64, SS>| {
+        // Create a new matrix representing positions of the other nodes used in this observation.
+        // This is a fixed size matrix with the number of rows equal to the number of measurements
+        let mut their_node_states = OMatrix::<f64, SS, OS>::zeros();
+
+        for i in 0..OS::dim() {
+            let their_state = nodes[their_indices[i]].state_and_covariance.state();
+            their_node_states
+                .view_mut((0, i), (3, 1))
+                .copy_from(their_state);
+        }
+
+        let evaluation_func = Box::new(move |state: &OVector<f64, SS>| {
             let mut y = OVector::<f64, OS>::zeros();
 
-            for (i, &(node1, node2)) in measurement_indices_clone.iter().enumerate() {
-                let x1 = Vector3::new(x[3 * node1], x[3 * node1 + 1], x[3 * node1 + 2]);
-                let x2 = Vector3::new(x[3 * node2], x[3 * node2 + 1], x[3 * node2 + 2]);
-                let distance = (x2 - x1).norm();
-                y[i] = distance;
+            // calculate the distance between nodes
+            for i in 0..OS::dim() {
+                y[i] = (their_node_states.column(i) - state).norm();
             }
-
             y
         });
 
+        let my_state = nodes[my_index].state_and_covariance.state();
         let mut observation_matrix = OMatrix::<f64, OS, SS>::zeros();
 
-        for (i, &(a, b)) in measurement_indices.iter().enumerate() {
-            let x1 = Vector3::new(state[3 * a], state[3 * a + 1], state[3 * a + 2]);
-            let x2 = Vector3::new(state[3 * b], state[3 * b + 1], state[3 * b + 2]);
-            let delta = x2 - x1;
+        for i in 0..OS::dim() {
+            let delta = their_node_states.column(i) - my_state;
             let distance = delta.norm();
 
             // if the distance is below the minimum, we expect a measurement of ~zero
             if distance > MINIMUM_DISTANCE {
                 let jacobian_row = -delta.transpose() / distance;
                 observation_matrix
-                    .view_mut((i, 3 * a), (1, 3))
-                    .copy_from(&jacobian_row);
-                observation_matrix
-                    .view_mut((i, 3 * b), (1, 3))
+                    .view_mut((i, 0), (1, 3))
                     .copy_from(&jacobian_row);
             }
         }
 
         let observation_matrix_transpose = observation_matrix.transpose();
         let observation_noise_covariance =
-            OMatrix::<f64, OS, OS>::identity() * self.observation_noise_covariance;
+            OMatrix::<f64, OS, OS>::identity() * observation_noise_covariance;
 
         LinearizedObservationModel {
             evaluation_func,

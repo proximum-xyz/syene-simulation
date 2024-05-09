@@ -14,10 +14,10 @@ pub fn simulate_distance_measurement(
     _model_signal_speed_fraction: f64,
     _model_node_latency: f64,
 ) -> f64 {
-    // True distance
+    // True distance multiplied by a constant factor
     (n1.true_position - n2.true_position).norm() * 1.1
 
-    // Todo: add noise
+    // TODO: better fake measurements
 
     // let true_distance = &n1.true_position.distance(&n2.true_position);
 
@@ -35,32 +35,38 @@ pub fn simulate_distance_measurement(
     // measured_distance
 }
 
-// Simulate a bunch of real world measurements between node pairs.
+// Simulate a bunch of real world measurements between node at one index and other nodes.
 pub fn generate_measurements(
+    my_index: usize,
     nodes: &[Node],
     n_measurements: usize,
     model_distance_max: f64,
     model_signal_speed_fraction: f64,
     model_node_latency: f64,
-) -> (Vec<(usize, usize)>, OVector<f64, OS>) {
+) -> (Vec<usize>, OVector<f64, OS>) {
     info!("Generating {} measurements", n_measurements);
 
     let mut rng = rand::thread_rng();
 
-    let mut indices: Vec<(usize, usize)> = Vec::new();
+    let mut indices: Vec<usize> = Vec::new();
     let mut distances: OVector<f64, OS> = OVector::<f64, OS>::zeros();
 
     for i in 0..n_measurements {
         // Randomly select two distinct nodes
         trace!("Generating measurement {}/{}: ", i + 1, n_measurements);
-        let (pair, distance) = loop {
-            let indices = (0..nodes.len()).choose_multiple(&mut rng, 2);
-            if indices[0] == indices[1] {
-                trace!("Message to self (node {}), retrying", indices[0]);
+        let node_a = &nodes[my_index];
+
+        let mut loop_counter = 0;
+        let (their_index, distance) = loop {
+            loop_counter += 1;
+
+            let their_index = (0..nodes.len()).choose(&mut rng).unwrap();
+            if my_index == their_index {
+                trace!("Message to self (node {}), retrying", my_index);
                 continue;
-            }
-            let node_a = &nodes[indices[0]];
-            let node_b = &nodes[indices[1]];
+            };
+
+            let node_b = &nodes[their_index];
 
             if (node_a.true_position - node_b.true_position).norm() > model_distance_max {
                 trace!(
@@ -68,6 +74,13 @@ pub fn generate_measurements(
                     (node_a.true_position - node_b.true_position).norm(),
                     model_distance_max
                 );
+
+                if loop_counter > 1000 {
+                    info!(
+                      "Loop counter exceeded (too few close nodes), breaking, no measurement will be used for this update."
+                  );
+                    break (their_index, std::f64::NAN);
+                }
                 // TODO: handle special case where no nodes are close enough - currently this creates an infinite loop
                 continue;
             }
@@ -79,10 +92,10 @@ pub fn generate_measurements(
                 model_node_latency,
             );
 
-            break ((indices[0], indices[1]), measured_distance);
+            break (their_index, measured_distance);
         };
 
-        indices.push(pair);
+        indices.push(their_index);
         distances[i] = distance;
     }
 

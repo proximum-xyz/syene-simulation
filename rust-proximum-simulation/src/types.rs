@@ -1,4 +1,5 @@
-use crate::kalman::{MyStateAndCovariance, NonlinearObservationModel, StationaryStateModel};
+use crate::kalman::SS;
+use adskalman::StateAndCovariance;
 use h3o::CellIndex;
 use serde::Serialize;
 extern crate nav_types;
@@ -19,7 +20,6 @@ mod serialize_ecef {
 
 #[derive(Serialize)]
 pub struct CompileParameters {
-    pub n_nodes: usize,
     pub n_measurements: usize,
 }
 
@@ -37,6 +37,9 @@ pub struct Node {
     pub estimated_wgs84: WGS84<f64>,
     pub channel_speed: f64,
     pub latency: f64,
+    // Kalman filter state and covariance
+    #[serde(skip)]
+    pub state_and_covariance: StateAndCovariance<f64, SS>,
 }
 
 #[derive(Serialize)]
@@ -47,8 +50,9 @@ pub struct Stats {
 
 #[derive(Serialize)]
 pub struct Simulation {
-    // general simulation parameters
-    pub nodes: Vec<Node>,
+    // simulation parameters (note that the numbers of measurements is a compiler flag)
+    pub n_nodes: usize,
+    pub n_epochs: usize,
     pub h3_resolution: i32,
     // physical parameters
     pub real_channel_speed_min: f64,
@@ -61,7 +65,8 @@ pub struct Simulation {
     pub model_measurement_variance: f64,
     pub model_signal_speed_fraction: f64,
     pub model_node_latency: f64,
-    // simulation parameters (note that the numbers of nodes and measurements are compiler flags)
-    pub n_epochs: usize,
+
+    // save internal data
+    pub nodes: Vec<Node>,
     pub stats: Stats,
 }

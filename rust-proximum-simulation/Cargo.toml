@@ -3,8 +3,9 @@ name = "rust-proximum-simulation"
 version = "0.1.0"
 edition = "2021"
 description = "simulation of Proximum state estimation for stationary terrestrial nodes"
-license = "None"
+license = "MIT"
 build = "build.rs"
+repository = "https://github.com/proximum-xyz/syene-simulation.git"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

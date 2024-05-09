@@ -1,17 +1,15 @@
 use crate::geometry::{ecef_to_h3, h3_to_ecef, random_h3_index};
 extern crate nav_types;
-use crate::kalman::{
-    NonlinearObservationModel, StationaryStateModel, N_MEASUREMENTS, N_NODES, OS, SS,
-};
+use crate::kalman::{NonlinearObservationModel, StationaryStateModel, N_MEASUREMENTS, SS};
 use crate::physics::generate_measurements;
 use crate::types::{Node, Simulation, Stats};
 use adskalman::{KalmanFilterNoControl, StateAndCovariance};
 use h3o::{CellIndex, Resolution};
-use log::info;
-use nalgebra::{
-    Const, DMatrix, DVector, DimName, Dyn, Dynamic, Matrix, OMatrix, OVector, VecStorage, U1, U6,
-};
+use log::{info, trace};
+use nalgebra::{OMatrix, OVector};
 use nav_types::{ECEF, WGS84};
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use rand::Rng;
 
 fn calculate_rms_error(nodes: &[Node]) -> f64 {
@@ -37,8 +35,10 @@ impl Node {
         asserted_index: CellIndex,
         channel_speed: f64,
         latency: f64,
+        model_state_variance: f64,
     ) -> Self {
         let true_position = h3_to_ecef(true_index);
+        let estimated_position = h3_to_ecef(asserted_index);
 
         Node {
             id,
@@ -46,11 +46,20 @@ impl Node {
             asserted_index,
             estimated_index: asserted_index,
             true_position,
-            estimated_position: true_position,
+            estimated_position,
             true_wgs84: WGS84::from(true_position),
             estimated_wgs84: WGS84::from(true_position),
             channel_speed,
             latency,
+            state_and_covariance: StateAndCovariance::new(
+                // dummy state for now
+                OVector::<f64, SS>::new(
+                    estimated_position.x(),
+                    estimated_position.y(),
+                    estimated_position.z(),
+                ),
+                OMatrix::<f64, SS, SS>::identity() * model_state_variance,
+            ),
         }
     }
 
@@ -63,6 +72,8 @@ impl Node {
 
 impl Simulation {
     pub fn new(
+        n_nodes: usize,
+        n_epochs: usize,
         h3_resolution: i32,
         real_channel_speed_min: f64,
         real_channel_speed_max: f64,
@@ -73,12 +84,11 @@ impl Simulation {
         model_measurement_variance: f64,
         model_signal_speed_fraction: f64,
         model_node_latency: f64,
-        n_epochs: usize,
     ) -> Self {
         let mut nodes: Vec<Node> = Vec::new();
         let resolution = Resolution::try_from(h3_resolution).expect("invalid H3 resolution");
 
-        for _ in 0..N_NODES {
+        for _ in 0..n_nodes {
             // TODO: assert false locations
             let cell_index = random_h3_index(resolution);
 
@@ -88,12 +98,14 @@ impl Simulation {
                 cell_index,
                 rand::thread_rng().gen_range(real_channel_speed_min..=real_channel_speed_max),
                 rand::thread_rng().gen_range(real_latency_min..=real_latency_max),
+                model_state_variance,
             );
             nodes.push(node);
         }
 
         Simulation {
-            nodes,
+            n_nodes,
+            n_epochs,
             h3_resolution,
             real_channel_speed_min,
             real_channel_speed_max,
@@ -104,21 +116,22 @@ impl Simulation {
             model_measurement_variance,
             model_signal_speed_fraction,
             model_node_latency,
-            n_epochs,
+            nodes,
             stats: Stats {
                 rms_error: Vec::new(),
             },
         }
     }
 
-    // Update the estimated position of the node based on new measurements using the Kalman filter
-    fn estimate_positions(
+    // Update the estimated position of a specific node based on new measurements using the Kalman filter
+    fn estimate_position(
         &mut self,
+        node_index: usize,
         observation_model_generator: &NonlinearObservationModel,
         state_model: &StationaryStateModel<f64>,
-        state: &mut StateAndCovariance<f64, SS>,
     ) {
         let (indices, distances) = generate_measurements(
+            node_index,
             &self.nodes,
             N_MEASUREMENTS,
             self.model_distance_max,
@@ -126,64 +139,60 @@ impl Simulation {
             self.model_node_latency,
         );
 
-        info!(
-            "Simulated {} measurements: indices: {:#?}, distances: {}",
-            indices.len(),
+        let observation_model = observation_model_generator.linearize_at(
+            &self.nodes,
+            node_index,
             indices,
-            distances
+            self.model_measurement_variance,
         );
 
-        let observation_model = observation_model_generator.linearize_at(state.state(), indices);
+        trace!("built observation model");
 
-        info!("built observation model");
+        let node = &mut self.nodes[node_index];
 
         let kf = KalmanFilterNoControl::new(state_model, &observation_model);
 
-        info!("built kalman filter");
+        trace!("built kalman filter");
 
-        *state = kf.step(&state, &distances).expect("bad kalman filter step");
+        node.state_and_covariance = kf
+            .step(&node.state_and_covariance, &distances)
+            .expect("bad kalman filter step");
 
-        info!("finished Kalman filter step");
+        let state = node.state_and_covariance.state();
 
-        state
-            .state()
-            .as_slice()
-            .chunks_exact(3)
-            .enumerate()
-            .for_each(|(i, chunk)| {
-                let position = ECEF::new(chunk[0], chunk[1], chunk[2]);
-                // let clamped_position = clamp_ecef_to_ellipsoid(position);
-                self.nodes[i].update_estimated_position(position);
-            });
+        trace!("finished Kalman filter step");
 
-        info!("updated positions of all nodes");
+        // record new location in various reference frames
+        node.update_estimated_position(ECEF::new(state.x, state.y, state.z));
+
+        trace!(
+            "Node {}: true position: {:?}, estimated position: {:?}, error: {:?} meters",
+            node.id,
+            node.true_position,
+            node.estimated_position,
+            (node.true_position - node.estimated_position).norm()
+        );
     }
 
     pub fn run_simulation(&mut self) -> bool {
         info!("Running simulation: for {} epochs!", self.n_epochs);
 
-        let initial_state_iterator = self.nodes.iter().flat_map(|node| {
-            [
-                node.true_position.x(),
-                node.true_position.y(),
-                node.true_position.z(),
-            ]
-        });
-
-        let initial_state = OVector::<f64, SS>::from_iterator(initial_state_iterator);
-
-        let initial_covariance = OMatrix::<f64, SS, SS>::identity() * self.model_state_variance;
-
-        // Initialize the state of the Kalman filter with the asserted positions.
-        let mut state = StateAndCovariance::new(initial_state, initial_covariance);
+        // Set up the initial state of the Kalman filter for each node. Note that all nodes follow the same state and observation models!
         let state_model = StationaryStateModel::new(self.model_state_variance);
-        let observation_model_generator =
-            NonlinearObservationModel::new(self.model_measurement_variance);
+        let observation_model_generator = NonlinearObservationModel::new();
+
+        let mut rng = thread_rng();
 
         for i in 0..self.n_epochs {
             info!("Running epoch {}!", i);
-            // in each epoch we generate one set of measurements and update node location estimates with these measurements
-            self.estimate_positions(&observation_model_generator, &state_model, &mut state);
+            // Shuffle the order in which nodes are updated in each epoch
+            let mut indices: Vec<usize> = (0..self.n_nodes).collect();
+            indices.shuffle(&mut rng);
+            trace!("Shuffled node order: {:#?}", indices);
+
+            for &i in &indices {
+                self.estimate_position(i, &observation_model_generator, &state_model);
+            }
 
             // calculate the mean squared error for this epoch
             self.stats.rms_error.push(calculate_rms_error(&self.nodes));
