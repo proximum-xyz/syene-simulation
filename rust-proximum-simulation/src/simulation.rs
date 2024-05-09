@@ -1,7 +1,7 @@
 use crate::geometry::{ecef_to_h3, h3_to_ecef, random_h3_index};
 extern crate nav_types;
 use crate::kalman::{
-    update, NonlinearObservationModel, StationaryStateModel, N_MEASUREMENTS, N_NODES, OS, SS,
+    NonlinearObservationModel, StationaryStateModel, N_MEASUREMENTS, N_NODES, OS, SS,
 };
 use crate::physics::generate_measurements;
 use crate::types::{Node, Simulation, Stats};
@@ -18,17 +18,6 @@ fn calculate_rms_error(nodes: &[Node]) -> f64 {
     let mut squared_diff_sum = 0.0;
 
     for node in nodes {
-        // let true_pos = Vector3::new(
-        //     node.true_position.x(),
-        //     node.true_position.y(),
-        //     node.true_position.z(),
-        // );
-        // let estimated_pos = Vector3::new(
-        //     node.estimated_position.x(),
-        //     node.estimated_position.y(),
-        //     node.estimated_position.z(),
-        // );
-
         let diff = node.true_position - node.estimated_position;
         let squared_diff = diff.norm().powi(2);
         squared_diff_sum += squared_diff;
@@ -152,10 +141,7 @@ impl Simulation {
 
         info!("built kalman filter");
 
-        // *self.state =
-        //     update(&observation_model, &self.state, &distances).expect("bad kalman filter step");
-
-        // *state = kf.step(&state, &distances).expect("bad kalman filter step");
+        *state = kf.step(&state, &distances).expect("bad kalman filter step");
 
         info!("finished Kalman filter step");
 
@@ -184,25 +170,24 @@ impl Simulation {
             ]
         });
 
-        let initial_state = DVector::<f64>::from_iterator(SS::dim(), initial_state_iterator);
+        let initial_state = OVector::<f64, SS>::from_iterator(initial_state_iterator);
 
-        let initial_covariance =
-            DMatrix::<f64>::identity(SS::dim(), SS::dim()) * self.model_state_variance;
+        let initial_covariance = OMatrix::<f64, SS, SS>::identity() * self.model_state_variance;
 
         // Initialize the state of the Kalman filter with the asserted positions.
-        let mut state = Box::new(StateAndCovariance::new(initial_state, initial_covariance));
-        // let state_model = StationaryStateModel::new(self.model_state_variance);
-        // let observation_model_generator =
-        //     NonlinearObservationModel::new(self.model_measurement_variance);
+        let mut state = StateAndCovariance::new(initial_state, initial_covariance);
+        let state_model = StationaryStateModel::new(self.model_state_variance);
+        let observation_model_generator =
+            NonlinearObservationModel::new(self.model_measurement_variance);
 
-        // for i in 0..self.n_epochs {
-        //     info!("Running epoch {}!", i);
-        //     // in each epoch we generate one set of measurements and update node location estimates with these measurements
-        //     self.estimate_positions(&observation_model_generator, &state_model, &mut state);
+        for i in 0..self.n_epochs {
+            info!("Running epoch {}!", i);
+            // in each epoch we generate one set of measurements and update node location estimates with these measurements
+            self.estimate_positions(&observation_model_generator, &state_model, &mut state);
 
-        //     // calculate the mean squared error for this epoch
-        //     self.stats.rms_error.push(calculate_rms_error(&self.nodes));
-        // }
+            // calculate the mean squared error for this epoch
+            self.stats.rms_error.push(calculate_rms_error(&self.nodes));
+        }
         true
     }
 }

@@ -67,9 +67,9 @@ where
     // DefaultAllocator: Allocator<R, SS, SS>, // Adjust SS to your dimensions
     // DefaultAllocator: Allocator<R, SS>,
 {
-    pub transition_model: Box<OMatrix<R, SS, SS>>,
-    pub transition_model_transpose: Box<OMatrix<R, SS, SS>>,
-    pub transition_noise_covariance: Box<OMatrix<R, SS, SS>>,
+    pub transition_model: OMatrix<R, SS, SS>,
+    pub transition_model_transpose: OMatrix<R, SS, SS>,
+    pub transition_noise_covariance: OMatrix<R, SS, SS>,
 }
 
 impl<R> StationaryStateModel<R>
@@ -78,9 +78,9 @@ where
 {
     pub fn new(noise_scale: R) -> Self {
         // Allocate on the heap to avoid stack overflow for large matrices
-        let transition_model = Box::new(OMatrix::<R, SS, SS>::identity());
-        let transition_noise_covariance = Box::new(OMatrix::<R, SS, SS>::identity() * noise_scale);
-        let transition_model_transpose = Box::new(transition_model.transpose());
+        let transition_model = OMatrix::<R, SS, SS>::identity();
+        let transition_noise_covariance = OMatrix::<R, SS, SS>::identity() * noise_scale;
+        let transition_model_transpose = transition_model.transpose();
 
         Self {
             transition_model,
@@ -107,74 +107,6 @@ where
     fn Q(&self) -> &OMatrix<R, SS, SS> {
         &self.transition_noise_covariance
     }
-}
-
-// Taken from adskalman library - we cannot use the stack for big matrices!
-pub fn update<R: RealField>(
-    observation_model: &dyn ObservationModel<R, SS, OS>,
-    prior: &StateAndCovariance<R, SS>,
-    observation: &OVector<R, OS>,
-) -> Result<StateAndCovariance<R, SS>, Error> {
-    let h = observation_model.H();
-    trace!("h {}", h);
-    let p = prior.covariance();
-    trace!("p {}", p);
-
-    let ht = observation_model.HT();
-    trace!("ht {}", ht);
-    let r = observation_model.R();
-    trace!("r {}", r);
-
-    let s = (h * p * ht) + r;
-    trace!("s {}", s);
-
-    let s_chol = match nalgebra::linalg::Cholesky::new(s) {
-        Some(v) => v,
-        None => {
-            return Err(ErrorKind::CovarianceNotPositiveSemiDefinite.into());
-        }
-    };
-    let s_inv: Box<OMatrix<R, OS, OS>> = Box::new(s_chol.inverse());
-    trace!("s_inv {}", s_inv);
-
-    let k_gain: Box<OMatrix<R, SS, OS>> = Box::new(p * ht * *s_inv);
-    trace!("k_gain {}", k_gain);
-
-    let predicted: OVector<R, OS> = observation_model.predict_observation(prior.state());
-    trace!("predicted {}", predicted);
-    trace!("observation {}", observation);
-
-    let innovation: OVector<R, OS> = observation - predicted;
-    trace!("innovation {}", innovation);
-
-    let state: OVector<R, SS> = prior.state() + &*k_gain * innovation;
-    trace!("state {}", state);
-
-    trace!("self.observation_matrix() {}", observation_model.H());
-
-    let kh: Box<OMatrix<R, SS, SS>> = Box::new(&*k_gain * observation_model.H());
-    trace!("kh {}", kh);
-
-    let one_minus_kh = OMatrix::<R, SS, SS>::one() - *kh;
-    trace!("one_minus_kh {}", one_minus_kh);
-
-    let covariance_method = CovarianceUpdateMethod::JosephForm;
-    let covariance: Box<OMatrix<R, SS, SS>> = match covariance_method {
-        CovarianceUpdateMethod::JosephForm => {
-            let left = &one_minus_kh * prior.covariance() * &one_minus_kh.transpose();
-            let right = &*k_gain * r * &k_gain.transpose();
-            Box::new(left + right)
-        }
-        CovarianceUpdateMethod::OptimalKalman => Box::new(one_minus_kh * prior.covariance()),
-        CovarianceUpdateMethod::OptimalKalmanForcedSymmetric => {
-            let covariance1 = one_minus_kh * prior.covariance();
-            trace!("covariance1 {}", covariance1);
-            Box::new(covariance1.symmetric_part())
-        }
-    };
-    trace!("covariance {}", covariance);
-
-    Ok(StateAndCovariance::new(state, *covariance))
 }
 
 pub struct NonlinearObservationModel {
@@ -209,7 +141,7 @@ impl NonlinearObservationModel {
             y
         });
 
-        let mut observation_matrix = Box::new(OMatrix::<f64, OS, SS>::zeros());
+        let mut observation_matrix = OMatrix::<f64, OS, SS>::zeros();
 
         for (i, &(a, b)) in measurement_indices.iter().enumerate() {
             let x1 = Vector3::new(state[3 * a], state[3 * a + 1], state[3 * a + 2]);
@@ -229,9 +161,9 @@ impl NonlinearObservationModel {
             }
         }
 
-        let observation_matrix_transpose = Box::new(observation_matrix.transpose());
+        let observation_matrix_transpose = observation_matrix.transpose();
         let observation_noise_covariance =
-            Box::new(OMatrix::<f64, OS, OS>::identity() * self.observation_noise_covariance);
+            OMatrix::<f64, OS, OS>::identity() * self.observation_noise_covariance;
 
         LinearizedObservationModel {
             evaluation_func,
@@ -253,9 +185,9 @@ where
     DefaultAllocator: Allocator<Precision, SS>,
 {
     evaluation_func: EvaluationFn,
-    observation_matrix: Box<OMatrix<Precision, OS, SS>>,
-    observation_matrix_transpose: Box<OMatrix<Precision, SS, OS>>,
-    observation_noise_covariance: Box<OMatrix<Precision, OS, OS>>,
+    observation_matrix: OMatrix<Precision, OS, SS>,
+    observation_matrix_transpose: OMatrix<Precision, SS, OS>,
+    observation_noise_covariance: OMatrix<Precision, OS, OS>,
 }
 
 impl ObservationModel<Precision, SS, OS> for LinearizedObservationModel

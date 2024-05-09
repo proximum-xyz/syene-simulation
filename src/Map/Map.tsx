@@ -44,13 +44,7 @@ const Map = () => {
 
   useEffect(() => {
     (async () => {
-      const wasm = await init(); // initialize WASM code
-
-      // console.log('*** before grow', { ml: wasm.memory.buffer.byteLength });
-
-      // wasm.memory.grow(50000); // grow the memory buffer by 100 pages
-
-      // console.log('*** after grow', { ml: wasm.memory.buffer.byteLength });
+      await init(); // initialize WASM code
 
       // get the compile parameters from the WASM code
       const compileParameters = JSON.parse(get_compile_parameters());
@@ -59,7 +53,6 @@ const Map = () => {
   }, []);
 
   function runSimulation(simulationParams: SimulationParams) {
-    // estimateStackLimit();
     const simString = simulate(
       simulationParams.h3Resolution,
       simulationParams.realChannelSpeed[0],
