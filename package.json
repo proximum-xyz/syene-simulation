@@ -10,6 +10,7 @@
     "@testing-library/user-event": "^13.5.0",
     "h3-js": "^4.1.0",
     "leaflet": "^1.9.4",
+    "leaflet-ellipse": "^0.9.1",
     "leaflet.geodesic": "^2.7.1",
     "rc-slider": "^10.6.2",
     "react": "^18.2.0",

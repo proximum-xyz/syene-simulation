@@ -3,6 +3,7 @@ use adskalman::StateAndCovariance;
 use h3o::CellIndex;
 use serde::Serialize;
 extern crate nav_types;
+use nalgebra::{Const, OVector};
 use nav_types::{ECEF, WGS84};
 
 mod serialize_ecef {
@@ -33,7 +34,11 @@ pub struct Node {
     pub true_position: ECEF<f64>,
     #[serde(with = "serialize_ecef")]
     pub estimated_position: ECEF<f64>,
-    pub estimation_variance: Vec<SS>,
+    pub estimation_variance: OVector<f64, SS>,
+    pub en_variance_semimajor_axis: OVector<f64, Const<2>>,
+    pub en_variance_semiminor_axis: OVector<f64, Const<2>>,
+    pub en_variance_semimajor_axis_length: f64,
+    pub en_variance_semiminor_axis_length: f64,
     pub true_wgs84: WGS84<f64>,
     pub estimated_wgs84: WGS84<f64>,
     pub asserted_wgs84: WGS84<f64>,

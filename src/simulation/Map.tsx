@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Marker, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import L, { Elli } from 'leaflet';
 import init, { simulate, get_compile_parameters, InitOutput } from 'rust-proximum-simulation';
 import { CompilerParams, Simulation, SimulationParams } from '../types';
 import IntroModal from './IntroModal';
@@ -10,6 +10,10 @@ import SimulationOverlay from './SimulationOverlay';
 
 function rad2deg(radians: number) {
   return radians * 180 / Math.PI;
+}
+
+const varianceEllipse = () => {
+
 }
 
 const Map = () => {

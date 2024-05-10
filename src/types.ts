@@ -15,6 +15,7 @@ export interface Node {
   estimated_index: number;
   true_position: [number, number, number];
   estimated_position: [number, number, number];
+  estimation_variance: [number, number, number];
   true_wgs84: WGS84;
   estimated_wgs84: WGS84;
   asserted_wgs84: WGS84;

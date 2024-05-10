@@ -6,7 +6,7 @@ use crate::types::{Node, Simulation, Stats};
 use adskalman::{KalmanFilterNoControl, StateAndCovariance};
 use h3o::{CellIndex, Resolution};
 use log::{info, trace};
-use nalgebra::{OMatrix, OVector};
+use nalgebra::{Const, OMatrix, OVector};
 use nav_types::{ECEF, WGS84};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -47,7 +47,11 @@ impl Node {
             estimated_index: asserted_index,
             true_position,
             estimated_position,
-            estimation_variances: Vec::new(),
+            estimation_variance: OVector::<f64, SS>::zeros(),
+            en_variance_semimajor_axis: OVector::<f64, Const<2>>::zeros(),
+            en_variance_semiminor_axis: OVector::<f64, Const<2>>::zeros(),
+            en_variance_semimajor_axis_length: 0.0,
+            en_variance_semiminor_axis_length: 0.0,
             true_wgs84: WGS84::from(true_position),
             // asserted and estimated position will diverge as the simulation progresses
             estimated_wgs84: WGS84::from(estimated_position),
@@ -68,7 +72,22 @@ impl Node {
 
     fn update_estimated_position(&mut self) {
         let state = self.state_and_covariance.state();
+
+        // get the variance for ENU axes and the EN eigenvectors/values
         let covariance = self.state_and_covariance.covariance();
+
+        let en_covariance = covariance.view((0, 0), (2, 2));
+        let eigendecomposition = en_covariance.symmetric_eigen();
+        let eigenvectors = eigendecomposition.eigenvectors;
+        let eigenvalues = eigendecomposition.eigenvalues;
+
+        self.en_variance_semimajor_axis_length = eigenvalues[0].sqrt();
+        self.en_variance_semiminor_axis_length = eigenvalues[1].sqrt();
+
+        self.en_variance_semimajor_axis =
+            OVector::from([eigenvectors[(0, 0)], eigenvectors[(1, 0)]]);
+        self.en_variance_semiminor_axis =
+            OVector::from([eigenvectors[(0, 1)], eigenvectors[(1, 1)]]);
 
         self.estimation_variance = covariance.diagonal();
 
@@ -177,17 +196,6 @@ impl Simulation {
         // let state_and_covariance = node.state_and_covariance.state();
 
         trace!("finished Kalman filter step");
-
-        // record new location and variance in various (redundant) reference frames
-        node.update_estimated_position();
-
-        trace!(
-            "Node {}: true position: {:?}, estimated position: {:?}, error: {:?} meters",
-            node.id,
-            node.true_position,
-            node.estimated_position,
-            (node.true_position - node.estimated_position).norm()
-        );
     }
 
     pub fn run_simulation(&mut self) -> bool {
@@ -219,6 +227,19 @@ impl Simulation {
             self.stats
                 .assertion_stddev
                 .push(self.real_asserted_position_variance.sqrt());
+        }
+
+        // record new location and variance in various (redundant) reference frames for easier display
+        for node in &mut self.nodes {
+            node.update_estimated_position();
+
+            trace!(
+                "Node {}: true position: {:?}, estimated position: {:?}, error: {:?} meters",
+                node.id,
+                node.true_position,
+                node.estimated_position,
+                (node.true_position - node.estimated_position).norm()
+            );
         }
         true
     }
