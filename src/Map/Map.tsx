@@ -8,34 +8,12 @@ import SimulationControls, { SimulationParams } from './SimulationControls';
 import { CompileParameters, Node, Simulation } from '../types';
 import IntroModal from './IntroModal';
 import GeodesicLine from './GeodesicLine';
+
 import Stats from './Stats';
 
 function rad2deg(radians: number) {
   return radians * 180 / Math.PI;
 }
-
-// function estimateStackLimit() {
-//   let depth = 0;
-//   const stackSize = 1024; // Adjust this value based on your stack usage estimation
-
-//   function recurse() {
-//     depth++;
-//     const buffer = new ArrayBuffer(stackSize); // Allocate memory on the stack
-//     try {
-//       recurse();
-//     } catch (e) {
-//       console.log("Stack depth limit:", depth);
-//       console.log("Estimated stack memory limit:", depth * stackSize, "bytes");
-//     }
-//   }
-
-//   try {
-//     recurse();
-//   } catch (e) {
-//     console.log("Stack depth limit:", depth);
-//     console.log("Estimated stack memory limit:", depth * stackSize, "bytes");
-//   }
-// }
 
 const Map = () => {
   const [simulation, setSimulation] = useState<Simulation>();
@@ -54,7 +32,11 @@ const Map = () => {
 
   function runSimulation(simulationParams: SimulationParams) {
     const simString = simulate(
+      simulationParams.nNodes,
+      simulationParams.nEpochs,
       simulationParams.h3Resolution,
+      // convert km^2 to meters^2
+      simulationParams.realAssertedPositionVariance * 1000 * 1000,
       simulationParams.realChannelSpeed[0],
       simulationParams.realChannelSpeed[1],
       // convert µs to seconds
@@ -63,12 +45,13 @@ const Map = () => {
       simulationParams.realLatency[1] * 1e-6,
       // convert km to meters
       simulationParams.modelDistanceMax * 1000,
-      simulationParams.modelStateNoiseScale,
-      simulationParams.modelMeasurementVariance,
+      // convert km to meters
+      simulationParams.modelStateVariance * 1000 * 1000,
+      // convert km to meters
+      simulationParams.modelMeasurementVariance * 1000 * 1000,
       simulationParams.modelSignalSpeedFraction,
       // convert µs to seconds
       simulationParams.modelNodeLatency * 1e-6,
-      simulationParams.nEpochs,
     );
 
     const sim = JSON.parse(simString);
@@ -85,15 +68,18 @@ const Map = () => {
   const nodeContent = (simulation && simulation.nodes.length > 0) ? simulation.nodes.map((node, i) => {
     const trueLatLngDeg = [node.true_wgs84.latitude, node.true_wgs84.longitude].map(rad2deg) as [number, number];
     const estLatLngDeg = [node.estimated_wgs84.latitude, node.estimated_wgs84.longitude].map(rad2deg) as [number, number];
-
+    const assertedLatLngDeg = [node.asserted_wgs84.latitude, node.asserted_wgs84.longitude].map(rad2deg) as [number, number];
     const node0TrueLatLngDeg = [simulation.nodes[0].true_wgs84.latitude, simulation.nodes[0].true_wgs84.longitude].map(rad2deg) as [number, number]
 
     return (
       <React.Fragment key={i}>
-        {i > 0 && <GeodesicLine points={[node0TrueLatLngDeg, trueLatLngDeg]} options={{ color: "gray", opacity: 0.5 }} />}
-        <GeodesicLine points={[trueLatLngDeg, estLatLngDeg]} />
-        <CircleMarker center={estLatLngDeg} color="orange" fill fillColor="orange" radius={3} />
-        <CircleMarker center={trueLatLngDeg} color="blue" radius={3} />
+        {/* {i > 0 && <GeodesicLine points={[node0TrueLatLngDeg, trueLatLngDeg]} options={{ color: "gray", opacity: 0.5 }} />} */}
+        <CircleMarker center={estLatLngDeg} color="blue" fill fillColor="blue" radius={3} />
+        <CircleMarker center={assertedLatLngDeg} color="orange" fill fillColor="orange" radius={3} />
+        <CircleMarker center={trueLatLngDeg} color="green" fill fillColor="green" radius={4} />
+
+        <GeodesicLine points={[trueLatLngDeg, assertedLatLngDeg]} options={{ color: "orange" }} />
+        <GeodesicLine points={[trueLatLngDeg, estLatLngDeg]} options={{ color: "blue" }} />
         <Marker position={trueLatLngDeg} icon={L.divIcon({
           className: 'leaflet-custom-marker',
           html: `<div>${i}</div>`,
@@ -119,8 +105,9 @@ const Map = () => {
         {nodeContent}
         {/* <Pane name="custom-control-pane" style={{ zIndex: 1000000, position: 'absolute', top: 0, left: 0, height: '100%', width: '100%' }}> */}
         {compileParameters && <div style={{ zIndex: 1000000, position: 'absolute', top: 0, left: 0, height: '100%', width: '100%' }}>
-          <SimulationControls runSimulation={runSimulation} nNodes={compileParameters.n_nodes} nMeasurements={compileParameters.n_measurements} />
-          {simulation && <Stats simulation={simulation} />}
+          <SimulationControls runSimulation={runSimulation} nMeasurements={compileParameters.n_measurements} />
+
+          {simulation?.stats && <Stats stats={simulation.stats} />}
         </div>}
         {/* </Pane> */}
       </MapContainer >

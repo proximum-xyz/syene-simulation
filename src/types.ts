@@ -5,7 +5,6 @@ export interface WGS84 {
 }
 
 export interface CompileParameters {
-  n_nodes: number;
   n_measurements: number;
 }
 
@@ -18,17 +17,21 @@ export interface Node {
   estimated_position: [number, number, number];
   true_wgs84: WGS84;
   estimated_wgs84: WGS84;
+  asserted_wgs84: WGS84;
   channel_speed: number;
   latency: number;
 }
 
 export interface Stats {
-  rms_error: number[];
+  estimation_rms_error: number[];
+  assertion_stddev: number[];
 }
 
 export interface Simulation {
-  nodes: Node[];
+  n_nodes: number;
+  n_epochs: number;
   h3_resolution: number;
+  real_asserted_position_variance: number;
   real_channel_speed_min: number;
   real_channel_speed_max: number;
   real_latency_min: number;
@@ -38,6 +41,6 @@ export interface Simulation {
   model_measurement_variance: number;
   model_signal_speed_fraction: number;
   model_node_latency: number;
+  nodes: Node[];
   stats: Stats,
-  n_epochs: number;
 }

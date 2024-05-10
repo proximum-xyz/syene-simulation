@@ -11,30 +11,37 @@ export interface SimulationStats {
   rmsError: number;
 }
 
-const Stats = ({ simulation }: { simulation: Simulation }) => {
+const Stats = ({ stats }: { stats: Simulation["stats"] }) => {
 
-  console.log('***', { simulation });
+  console.log('***', { stats });
 
+  const data = [];
 
-  const rms_error = simulation.stats.rms_error;
+  for (let i = 0; i < stats.estimation_rms_error.length; i++) {
+    data.push({
+      name: '${i}',
+      epoch: i,
+      rmsError: stats.estimation_rms_error[i],
+      assertionStddev: stats.assertion_stddev[i],
+    });
+  }
+
   return (
-    <div>
-      {/* Other simulation controls */}
+    <>
       <div>
-        <label>RMS Error:</label>
-        <span>{rms_error[rms_error.length - 1]?.toFixed(2) || 0}</span>
       </div>
       <div>
-        <LineChart width={500} height={300} data={rms_error}>
-          <CartesianGrid strokeDasharray="3 3" />
+        <LineChart width={500} height={250} data={data}>
+          <CartesianGrid stroke="#333333" strokeDasharray="5 5" />
           <XAxis dataKey="epoch" />
           <YAxis />
           <Tooltip />
           <Legend />
-          <Line type="monotone" dataKey="rmsError" stroke="#8884d8" activeDot={{ r: 8 }} />
+          <Line type="monotone" dataKey="rmsError" stroke="blue" />
+          <Line type="monotone" dataKey="assertionStddev" stroke="orange" />
         </LineChart>
       </div>
-    </div>
+    </>
   );
 };
 

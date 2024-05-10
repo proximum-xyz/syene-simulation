@@ -35,6 +35,7 @@ pub struct Node {
     pub estimated_position: ECEF<f64>,
     pub true_wgs84: WGS84<f64>,
     pub estimated_wgs84: WGS84<f64>,
+    pub asserted_wgs84: WGS84<f64>,
     pub channel_speed: f64,
     pub latency: f64,
     // Kalman filter state and covariance
@@ -45,7 +46,10 @@ pub struct Node {
 #[derive(Serialize)]
 pub struct Stats {
     // simulation stats for each epoch
-    pub rms_error: Vec<f64>,
+    // meters
+    pub estimation_rms_error: Vec<f64>,
+    // meters
+    pub assertion_stddev: Vec<f64>,
 }
 
 #[derive(Serialize)]
@@ -55,6 +59,7 @@ pub struct Simulation {
     pub n_epochs: usize,
     pub h3_resolution: i32,
     // physical parameters
+    pub real_asserted_position_variance: f64,
     pub real_channel_speed_min: f64,
     pub real_channel_speed_max: f64,
     pub real_latency_min: f64,

@@ -5,37 +5,47 @@ import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 import ReactMarkdown from 'react-markdown';
 import { time } from 'console';
+import { parse } from 'path';
+import { Simulation } from '../types';
 
 export interface SimulationParams {
+  nNodes: number;
+  nEpochs: number;
   h3Resolution: number;
+  realAssertedPositionVariance: number;
   realChannelSpeed: [number, number];
   realLatency: [number, number];
   modelDistanceMax: number;
-  modelStateNoiseScale: number;
+  modelStateVariance: number;
   modelMeasurementVariance: number;
   modelSignalSpeedFraction: number;
   modelNodeLatency: number;
-  nEpochs: number;
 }
 
+type SimulationParamFields = {
+  [k in keyof SimulationParams]: string;
+}
 
 const defaultSimulationParams: SimulationParams = {
+  nNodes: 2,
+  nEpochs: 10,
   h3Resolution: 7,
+  // km^2
+  realAssertedPositionVariance: 1.0,
   // c
   realChannelSpeed: [0.7, 1],
   // µs
   realLatency: [20000, 30000],
   // km
   modelDistanceMax: 1_000_000.0,
-  // m²
-  modelStateNoiseScale: 0.1,
-  // m²
-  modelMeasurementVariance: 1.0,
+  // km²
+  modelStateVariance: 0.1,
+  // km²
+  modelMeasurementVariance: 1,
   // c
   modelSignalSpeedFraction: 0.85,
   // µs
   modelNodeLatency: 25000,
-  nEpochs: 10,
 };
 
 const ControlsWrapper = styled.div`
@@ -202,7 +212,6 @@ const SliderInputWrapper = styled.div`
 
 interface SimulationControlsProps {
   runSimulation: (params: SimulationParams) => void;
-  nNodes: number;
   nMeasurements: number;
 }
 
@@ -217,10 +226,11 @@ const titleTexts: FormDescriptor = {
   nNodes: 'Nodes',
   nMeasurements: 'Measurements',
   h3Resolution: 'H3 Resolution',
+  realAssertedPositionVariance: 'Asserted Position Variance (km²)',
   realChannelSpeed: 'Real Message Speed (c)',
   realLatency: 'Real Latency (µs)',
   modelDistanceMax: 'Message Range (km)',
-  modelStateNoiseScale: 'Estimator State Variance (m²)',
+  modelStateVariance: 'Estimator State Variance (m²)',
   modelMeasurementVariance: 'Estimator Measurement Variance (m²)',
   modelSignalSpeedFraction: 'Estimator Message Speed (c)',
   modelNodeLatency: 'Estimator Latency (c)',
@@ -247,6 +257,13 @@ const helpTexts: FormDescriptor = {
   h3Resolution: `
   The resolution of the H3 grid used by nodes asserting a position. Explore H3 resolutions [here](https://wolf-h3-viewer.glitch.me/).
   `,
+  realAssertedPositionVariance: `
+  Adversarial nodes can attempt to deceive the network by asserting a location other than their true position!
+  
+  We model this by assuming all asserted node positions are drawn from a normal distribution centered around the node's true position with a variance in km² specified by this parameter.
+
+  Can the Proximum network detect and penalize adversarial nodes? Run the simulation to find out!
+  `,
   realChannelSpeed: `
   Nodes send each other messages to measure distances. These messages propagate at different speeds depending on the communication medium. This simulation draws each message speed from a uniform distribution over the specified range.
   
@@ -272,7 +289,7 @@ const helpTexts: FormDescriptor = {
   modelDistanceMax: `
   Nodes can only reach other nodes within this range (e.g. because radio signals only travel so far). Set it to a value > 13,000 km to simulate all nodes being able to reach each other.
   `,
-  modelStateNoiseScale: `
+  modelStateVariance: `
   Proximum models all nodes as stationary but its confidence in the position of each node decreases over time (until new distance measurements are made). This parameter controls the rate at which the confidence decreases.
 
   This state noise variance is added to the estimated state of the node positions within the Extended Kalman Filter at each epoch.  
@@ -308,7 +325,6 @@ const helpTexts: FormDescriptor = {
 
 const SimulationControls: React.FC<SimulationControlsProps> = ({
   runSimulation,
-  nNodes,
   nMeasurements,
 }) => {
   const { control, handleSubmit, watch } = useForm({
@@ -319,10 +335,23 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
 
   const [helpParameterName, setHelpParameterName] = useState<FieldKeys | null>(null);
 
-  const onSubmit = async (params: SimulationParams) => {
+  const onSubmit = async (params: SimulationParamFields) => {
     setIsSimulating(true);
     try {
-      runSimulation(params);
+      const parsedParams: SimulationParams = {
+        nNodes: parseInt(params.nNodes),
+        nEpochs: parseInt(params.nEpochs),
+        h3Resolution: parseInt(params.h3Resolution),
+        realAssertedPositionVariance: parseFloat(params.realAssertedPositionVariance),
+        realChannelSpeed: (params.realChannelSpeed as any as string[]).map(parseFloat) as [number, number],
+        realLatency: (params.realLatency as any as string[]).map(parseFloat) as [number, number],
+        modelDistanceMax: parseFloat(params.modelDistanceMax),
+        modelStateVariance: parseFloat(params.modelStateVariance),
+        modelMeasurementVariance: parseFloat(params.modelMeasurementVariance),
+        modelSignalSpeedFraction: parseFloat(params.modelSignalSpeedFraction),
+        modelNodeLatency: parseFloat(params.modelNodeLatency),
+      };
+      runSimulation(parsedParams);
     } catch (e) {
       console.error(e);
       alert(e);
@@ -397,7 +426,18 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
     <>
       <ControlsWrapper>
         <h2>Proximum Simulation</h2>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit as any)}>
+          <FormGroup>
+            <Label>
+              {titleTexts['nNodes']}
+              <HelpIcon onClick={() => showHelpText('nNodes')}>&#9432;</HelpIcon>
+            </Label>
+            <Controller
+              name="nNodes"
+              control={control}
+              render={({ field }) => <Input type="number" step="1" {...field} />}
+            />
+          </FormGroup>
           <FormGroup>
             <Label>
               {titleTexts['nEpochs']}
@@ -409,15 +449,6 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
               render={({ field }) => <Input type="number" step="1" {...field} />}
             />
           </FormGroup>
-
-          <SectionHeader>Physical Parameters</SectionHeader>
-          <FormGroup>
-            <Label>
-              {titleTexts['nNodes']}
-              <HelpIcon onClick={() => showHelpText('nNodes')}>&#9432;</HelpIcon>
-            </Label>
-            <ReadOnlyValue>{nNodes}</ReadOnlyValue>
-          </FormGroup>
           <FormGroup>
             <Label>
               {titleTexts['nMeasurements']}
@@ -425,6 +456,8 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
             </Label>
             <ReadOnlyValue>{nMeasurements}</ReadOnlyValue>
           </FormGroup>
+
+          <SectionHeader>Physical Parameters</SectionHeader>
           {/* <FormGroup>
             <Label>
               {titleTexts['h3Resolution']}
@@ -436,6 +469,17 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
               render={({ field }) => <Input type="number" step="1" {...field} />}
             />
           </FormGroup> */}
+          <FormGroup>
+            <Label>
+              {titleTexts['realAssertedPositionVariance']}
+              <HelpIcon onClick={() => showHelpText('realAssertedPositionVariance')}>&#9432;</HelpIcon>
+            </Label>
+            <Controller
+              name="realAssertedPositionVariance"
+              control={control}
+              render={({ field }) => <Input type="number" step="0.01" {...field} />}
+            />
+          </FormGroup>
           <FormGroup>
             <Label>
               {titleTexts['realChannelSpeed']}
@@ -489,11 +533,11 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
 
           <FormGroup>
             <Label>
-              {titleTexts['modelStateNoiseScale']}
-              <HelpIcon onClick={() => showHelpText('modelStateNoiseScale')}>&#9432;</HelpIcon>
+              {titleTexts['modelStateVariance']}
+              <HelpIcon onClick={() => showHelpText('modelStateVariance')}>&#9432;</HelpIcon>
             </Label>
             <Controller
-              name="modelStateNoiseScale"
+              name="modelStateVariance"
               control={control}
               render={({ field }) => <Input type="number" step="0.1" {...field} />}
             />

@@ -50,9 +50,9 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ onClose }) => {
   return (
     <ModalWrapper>
       <ModalContent>
-        <Title>Proximum Simulation</Title>
+        <Title>Proximum: Syene Testnet Sim</Title>
         <Description>
-          This app simulates the Proximum location network -- think GPS, but onchain.
+          This app simulates the basics of the Proximum location network -- think GPS, but onchain.
           <h3>How do I use it?</h3>
           <p>Click on the map to drop a user there. Proximum estimates their location by pinging local nodes.</p>
           <ul>

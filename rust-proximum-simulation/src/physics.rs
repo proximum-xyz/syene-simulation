@@ -15,24 +15,8 @@ pub fn simulate_distance_measurement(
     _model_node_latency: f64,
 ) -> f64 {
     // True distance multiplied by a constant factor
-    (n1.true_position - n2.true_position).norm() * 1.1
-
     // TODO: better fake measurements
-
-    // let true_distance = &n1.true_position.distance(&n2.true_position);
-
-    // // the time it takes for a signal to be received by n2 (latency is in ms)
-    // let t1 = true_distance / C; //  + n2.latency / 1000.0;
-    //                             // the time it takes for the return signal to be received by n2
-    // let t2 = true_distance / C; // + n1.latency / 1000.0;
-
-    // let measured_distance = (C * 1.0) * (t1 + t2) / 2.0; //  - 2.0 * model_node_latency) / 2.0;
-
-    // // we model the signal speed and node latency as constants despite real-world variation
-    // // let measured_distance =
-    // // (C * model_signal_speed_fraction) * (t1 + t2 - 2.0 * model_node_latency) / 2.0;
-
-    // measured_distance
+    (n1.true_position - n2.true_position).norm()
 }
 
 // Simulate a bunch of real world measurements between node at one index and other nodes.

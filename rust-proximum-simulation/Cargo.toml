@@ -25,6 +25,7 @@ nav-types = { version = "0.5.2", features = ["serde"] }
 log = { version = "0.4.21" }
 console_log = "1.0.0"
 typenum = "1.17.0"
+rand_distr = "0.4.3"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

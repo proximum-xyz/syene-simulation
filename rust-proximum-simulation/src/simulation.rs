@@ -1,4 +1,4 @@
-use crate::geometry::{ecef_to_h3, h3_to_ecef, random_h3_index};
+use crate::geometry::{ecef_to_h3, h3_to_ecef, normal_neighbor_index, uniform_h3_index};
 extern crate nav_types;
 use crate::kalman::{NonlinearObservationModel, StationaryStateModel, N_MEASUREMENTS, SS};
 use crate::physics::generate_measurements;
@@ -48,7 +48,9 @@ impl Node {
             true_position,
             estimated_position,
             true_wgs84: WGS84::from(true_position),
-            estimated_wgs84: WGS84::from(true_position),
+            // asserted and estimated position will diverge as the simulation progresses
+            estimated_wgs84: WGS84::from(estimated_position),
+            asserted_wgs84: WGS84::from(estimated_position),
             channel_speed,
             latency,
             state_and_covariance: StateAndCovariance::new(
@@ -75,6 +77,7 @@ impl Simulation {
         n_nodes: usize,
         n_epochs: usize,
         h3_resolution: i32,
+        real_asserted_position_variance: f64,
         real_channel_speed_min: f64,
         real_channel_speed_max: f64,
         real_latency_min: f64,
@@ -89,13 +92,17 @@ impl Simulation {
         let resolution = Resolution::try_from(h3_resolution).expect("invalid H3 resolution");
 
         for _ in 0..n_nodes {
-            // TODO: assert false locations
-            let cell_index = random_h3_index(resolution);
+            // randomly place a node somewhere on the earth's surface
+            let true_index = uniform_h3_index(resolution);
+
+            // generate a random asserted position drawn from a gaussian distribution around the real position
+            let asserted_index =
+                normal_neighbor_index(true_index, real_asserted_position_variance, resolution);
 
             let node = Node::new(
                 nodes.len(),
-                cell_index,
-                cell_index,
+                true_index,
+                asserted_index,
                 rand::thread_rng().gen_range(real_channel_speed_min..=real_channel_speed_max),
                 rand::thread_rng().gen_range(real_latency_min..=real_latency_max),
                 model_state_variance,
@@ -107,6 +114,7 @@ impl Simulation {
             n_nodes,
             n_epochs,
             h3_resolution,
+            real_asserted_position_variance,
             real_channel_speed_min,
             real_channel_speed_max,
             real_latency_min,
@@ -118,7 +126,8 @@ impl Simulation {
             model_node_latency,
             nodes,
             stats: Stats {
-                rms_error: Vec::new(),
+                estimation_rms_error: Vec::new(),
+                assertion_stddev: Vec::new(),
             },
         }
     }
@@ -195,7 +204,14 @@ impl Simulation {
             }
 
             // calculate the mean squared error for this epoch
-            self.stats.rms_error.push(calculate_rms_error(&self.nodes));
+            self.stats
+                .estimation_rms_error
+                .push(calculate_rms_error(&self.nodes));
+
+            // log the (constant) error in the asserted position
+            self.stats
+                .assertion_stddev
+                .push(self.real_asserted_position_variance.sqrt());
         }
         true
     }
