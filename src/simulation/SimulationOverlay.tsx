@@ -6,25 +6,50 @@ import Stats from './Stats';
 import { CompilerParams, Simulation, SimulationParams } from '../types';
 import { InitOutput, get_compile_parameters } from 'rust-proximum-simulation';
 
-const OverlayWrapper = styled.div`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 100000;
-  background-color: rgba(0, 0, 0, 0.8);
-  padding: 10px;
-  border-radius: 4px;
-  max-width: 400px;
-`;
-
 const ToggleButton = styled.button`
-  background-color: #007bff;
-  color: white;
+  background-color: transparent;
+  color: #ffffff;
   border: none;
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
   margin-bottom: 10px;
+  transition: background-color 0.3s ease;
+  font-size: 14px;
+  // text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(255, 255, 255, 0.6);
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    text-decoration-color: rgba(255, 255, 255, 0.8);
+  }
+`;
+
+const OverlayWrapper = styled.div`
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100000;
+  padding: 10px;
+  border-radius: 4px;
+  max-width: 800px;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+`;
+
+const Column = styled.div`
+  flex: 2;
+`;
+
+
+const Column2 = styled.div`
+  flex: 3;
 `;
 
 interface SimulationOverlayProps {
@@ -35,7 +60,6 @@ interface SimulationOverlayProps {
 
 const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
   runSimulation,
-  wasm,
   simulation,
 }) => {
   const [isFormCollapsed, setIsFormCollapsed] = useState(false);
@@ -65,22 +89,23 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
 
     if (!compilerParams) return null;
 
-    return (<>
-      <ToggleButton onClick={() => { setIsFormCollapsed(!isFormCollapsed) }}>
-        {isFormCollapsed ? 'Show Controls' : 'Hide Controls'}
-      </ToggleButton>
-      {
-        !isFormCollapsed && (
-          <>
-            <SimulationForm
-              runSimulation={handleSimulationRun}
-              compilerParams={compilerParams}
-              initialParams={loadSimulationParams()}
-            />
-          </>
-        )
-      }
-    </>)
+    return (
+      <Column>
+        <ToggleButton onClick={() => { setIsFormCollapsed(!isFormCollapsed) }}>
+          {isFormCollapsed ? 'Show Controls' : 'Hide Controls'}
+        </ToggleButton>
+        {
+          !isFormCollapsed && (
+            <>
+              <SimulationForm
+                runSimulation={handleSimulationRun}
+                compilerParams={compilerParams}
+                initialParams={loadSimulationParams()}
+              />
+            </>
+          )
+        }
+      </Column>)
   }
 
   const stats = () => {
@@ -88,12 +113,12 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
       return null
     }
     return (
-      <>
+      <Column2>
         <ToggleButton onClick={() => { setIsStatsCollapsed(!isStatsCollapsed) }}>
           {isStatsCollapsed ? 'Show Stats' : 'Hide Stats'}
         </ToggleButton>
-        < Stats stats={simulation.stats} />
-      </>
+        {!isStatsCollapsed && < Stats stats={simulation.stats} />}
+      </Column2>
     )
   }
 
@@ -101,7 +126,7 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
     <OverlayWrapper>
       {form()}
       {stats()}
-    </OverlayWrapper>
+    </OverlayWrapper >
   );
 };
 

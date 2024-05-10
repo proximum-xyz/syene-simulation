@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CompilerParams, SimulationParams } from '../types';
-import { ControlsWrapper, SectionHeader, FormField, Button, ProgressIndicator } from './SimulationFormComponents';
+import { SectionHeader1, SectionHeader2, FormWrapper, FormField, Button, ProgressIndicator } from './SimulationFormComponents';
+import styled from 'styled-components';
 
 type SimulationParamFields = {
   [k in keyof SimulationParams]: string;
 }
 
 const defaultSimulationParams: SimulationParams = {
-  nNodes: 2,
+  nNodes: 25,
   nMeasurements: 1,
-  nEpochs: 10,
+  nEpochs: 4,
   h3Resolution: 7,
   // km
   realAssertedPositionStddev: 100,
@@ -19,11 +20,11 @@ const defaultSimulationParams: SimulationParams = {
   // µs
   realLatency: [20000, 30000],
   // km
-  modelDistanceMax: 1_000_000.0,
+  modelDistanceMax: 13_000.0,
   // km
   modelStateStddev: 0.1,
   // km
-  modelMeasurementStddev: 100,
+  modelMeasurementStddev: 0.1,
   // c
   modelSignalSpeedFraction: 0.85,
   // µs
@@ -50,7 +51,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
   const onSubmit = async (params: SimulationParamFields) => {
     setIsSimulating(true);
     // wait for a bit to let the button update
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     try {
       const parsedParams: SimulationParams = {
@@ -77,30 +78,29 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
   };
 
   return (
-    <>
-      <ControlsWrapper>
-        <h2>Proximum Simulation</h2>
-        <form onSubmit={handleSubmit(onSubmit as any)}>
-          <FormField name='nEpochs' control={control} watch={watch} />
-          <FormField name='nMeasurements' control={control} watch={watch} />
+    <FormWrapper>
+      <h2>Proximum Simulation</h2>
+      <form onSubmit={handleSubmit(onSubmit as any)}>
+        <FormField name='nNodes' control={control} watch={watch} />
+        <FormField name='nEpochs' control={control} watch={watch} />
+        <FormField name='nMeasurements' control={control} watch={watch} options={{ readonly: true }} />
 
-          <SectionHeader>Physical Parameters</SectionHeader>
-          <FormField name='realAssertedPositionStddev' control={control} watch={watch} options={{ min: 0, max: 13000 }} />
-          <FormField name='realChannelSpeed' control={control} watch={watch} options={{ min: 0, max: 1, slider: true }} />
-          <FormField name='realLatency' control={control} watch={watch} options={{ min: 0, max: 30000, slider: true }} />
-          <FormField name='modelDistanceMax' control={control} watch={watch} options={{ min: 10, max: 13000 }} />
+        <SectionHeader1>Physical Parameters</SectionHeader1>
+        <FormField name='realAssertedPositionStddev' control={control} watch={watch} options={{ min: 0, max: 13000 }} />
+        <FormField name='realChannelSpeed' control={control} watch={watch} options={{ min: 0, max: 1, step: 0.01, slider: true }} />
+        <FormField name='realLatency' control={control} watch={watch} options={{ min: 0, max: 30000, slider: true }} />
+        <FormField name='modelDistanceMax' control={control} watch={watch} options={{ min: 10, max: 13000 }} />
 
-          <SectionHeader>Model Parameters</SectionHeader>
-          <FormField name='modelSignalSpeedFraction' control={control} watch={watch} options={{ min: 0, max: 1 }} />
-          <FormField name='modelNodeLatency' control={control} watch={watch} options={{ min: 0, max: 30000 }} />
-          <FormField name='modelStateStddev' control={control} watch={watch} options={{ min: 0.01 }} />
-          <FormField name='modelMeasurementStddev' control={control} watch={watch} options={{ min: 0.01 }} />
+        <SectionHeader1>Model Parameters</SectionHeader1>
+        <FormField name='modelSignalSpeedFraction' control={control} watch={watch} options={{ min: 0, max: 1, step: 0.01 }} />
+        <FormField name='modelNodeLatency' control={control} watch={watch} options={{ min: 0, max: 30000 }} />
+        <FormField name='modelStateStddev' control={control} watch={watch} options={{ min: 0.0, step: 0.001 }} />
+        <FormField name='modelMeasurementStddev' control={control} watch={watch} options={{ min: 0.0, step: 0.001 }} />
 
-          {isSimulating ? <ProgressIndicator /> : <Button type="submit" disabled={isSimulating}>Simulate</Button>}
+        {isSimulating ? <ProgressIndicator /> : <Button type="submit" disabled={isSimulating}>Simulate</Button>}
 
-        </form>
-      </ControlsWrapper >
-    </>
+      </form>
+    </FormWrapper >
   );
 };
 

@@ -15,12 +15,24 @@ type FormDescriptor = {
   [x in FieldKeys]: string;
 };
 
-export const ControlsWrapper = styled.div`
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background-color: #1f1f1f;
-  padding: 20px;
+export const SectionHeader1 = styled.h4`
+  font-size: 1rem;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  color: #00ff9f;
+`;
+
+
+export const SectionHeader2 = styled.h4`
+  font-size: 1rem;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  color: #ff4081;
+`;
+
+export const FormWrapper = styled.div`
+  background-color: #1f1f1fdd;
+  padding: 16px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   color: #ffffff;
@@ -29,16 +41,9 @@ export const ControlsWrapper = styled.div`
   box-sizing: border-box;
 `;
 
-export const SectionHeader = styled.h4`
-  font-size: 1rem;
-  margin-top: 24px;
-  margin-bottom: 16px;
-  color: #bbbbbb;
-`;
-
 export const Button = styled.button`
-  padding: 8px 16px;
-  background-color: #007bff;
+  padding: 6px 12px;
+  background-color: #ff4081;
   color: white;
   border: none;
   border-radius: 4px;
@@ -47,10 +52,10 @@ export const Button = styled.button`
 
 export const ProgressIndicator = styled.div`
   display: inline-block;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  border: 2px solid #007bff;
+  border: 2px solid #ff4081;
   border-top-color: transparent;
   animation: spin 1s linear infinite;
   margin-left: 8px;
@@ -66,18 +71,19 @@ export const ProgressIndicator = styled.div`
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 `;
 
 const Label = styled.label`
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   font-weight: bold;
+  color: #ffffff;
 `;
 
 const ReadOnlyValue = styled.div`
-  padding: 6px 12px;
-  background-color: #222222;
+  padding: 4px 8px;
+  background-color: #333333;
   border-radius: 4px;
   color: #ffffff;
   cursor: default !important;
@@ -85,7 +91,7 @@ const ReadOnlyValue = styled.div`
 
 const Input = styled.input`
   width: 100%;
-  padding: 6px 12px;
+  padding: 4px 8px;
   border: 1px solid #555555;
   border-radius: 4px;
   background-color: #333333;
@@ -93,15 +99,14 @@ const Input = styled.input`
   box-sizing: border-box;
 `;
 
-
 const HelpIcon = styled.span`
   margin-left: 5px;
   cursor: pointer;
-  color: #007bff;
+  color: #00b8ff;
 `;
 
 const SliderWrapper = styled.div`
-  margin-top: 8px;
+  margin-top: 4px;
 `;
 
 const SliderInput = styled.input`
@@ -121,7 +126,7 @@ const HelpTextPopup = styled.div`
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: #1f1f1f;
-  padding: 20px;
+  padding: 16px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   color: #ffffff;
@@ -132,6 +137,7 @@ const HelpTextPopup = styled.div`
 
 const HelpTextTitle = styled.h4`
   margin-top: 0;
+  color: #00ff9f;
 `;
 
 const HelpTextContent = styled.div`
@@ -139,13 +145,13 @@ const HelpTextContent = styled.div`
 `;
 
 const CloseButton = styled.button`
-  padding: 8px 16px;
-  background-color: #007bff;
+  padding: 6px 12px;
+  background-color: #ff4081;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  margin-top: 16px;
+  margin-top: 12px;
 `;
 
 const CustomSlider = styled(Slider)`
@@ -154,28 +160,28 @@ const CustomSlider = styled(Slider)`
   }
 
   .rc-slider-track {
-    background-color: #1e88e5;
+    background-color: #00ff9f;
   }
 
   .rc-slider-handle {
-    border-color: #1e88e5;
-    background-color: #1e88e5;
+    border-color: #00ff9f;
+    background-color: #00ff9f;
   }
 
   .rc-slider-handle:hover {
-    border-color: #1565c0;
+    border-color: #00aacc;
   }
 
   .rc-slider-handle:active {
-    border-color: #1565c0;
-    box-shadow: 0 0 5px #1565c0;
+    border-color: #00aacc;
+    box-shadow: 0 0 5px #00aacc;
   }
 `;
 
 const SliderInputWrapper = styled.div`
   display: flex;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 4px;
 `;
 
 
@@ -187,8 +193,8 @@ const titleTexts: FormDescriptor = {
   realChannelSpeed: 'Real Message Speed (c)',
   realLatency: 'Real Latency (µs)',
   modelDistanceMax: 'Message Range (km)',
-  modelStateStddev: 'Estimator State Std. Dev. (m)',
-  modelMeasurementStddev: 'Estimator Measurement Std. Dev. (m)',
+  modelStateStddev: 'Estimator State Std. Dev. (km)',
+  modelMeasurementStddev: 'Estimator Measurement Std. Dev. (km)',
   modelSignalSpeedFraction: 'Estimator Message Speed (c)',
   modelNodeLatency: 'Estimator Latency (c)',
   nEpochs: 'Epochs',
@@ -272,11 +278,11 @@ const helpTexts: FormDescriptor = {
   Proximum models node latency as a constant value when estimating distances within the Extended Kalman Filter.
   `,
   nEpochs: `
-  The number of epochs for which to run the simulation.
+  The number of times to estimate the position of each node in the simulation.
   
   Each epoch consists of a set of distance measurements defined by the *Measurements* parameter and a position estimation step. Increasing the number of epochs improves position accuracy but also increases computational difficulty.
 
-  You can think of each epoch as a single block on the blockchain (although in practice they may not map 1:1).
+ Think of each epoch as a single block on the blockchain (although in practice they may not map 1:1).
   `,
 };
 

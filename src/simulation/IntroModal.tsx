@@ -35,7 +35,7 @@ const Description = styled.p`
 
 const CloseButton = styled.button`
   padding: 8px 16px;
-  background-color: #007bff;
+  background-color: #ff8c00;
   color: white;
   border: none;
   border-radius: 4px;

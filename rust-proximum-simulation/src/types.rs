@@ -33,6 +33,7 @@ pub struct Node {
     pub true_position: ECEF<f64>,
     #[serde(with = "serialize_ecef")]
     pub estimated_position: ECEF<f64>,
+    pub estimation_variance: Vec<SS>,
     pub true_wgs84: WGS84<f64>,
     pub estimated_wgs84: WGS84<f64>,
     pub asserted_wgs84: WGS84<f64>,

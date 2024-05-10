@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Marker, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import init, { simulate, get_compile_parameters, InitOutput } from 'rust-proximum-simulation';
@@ -14,7 +14,7 @@ function rad2deg(radians: number) {
 
 const Map = () => {
   const [simulation, setSimulation] = useState<Simulation>();
-  const [showIntroModal, setShowIntroModal] = useState(true);
+  const [showIntroModal, setShowIntroModal] = useState(false);
 
   // initialize WASM
   const [wasm, setWasm] = useState<InitOutput>();
@@ -67,13 +67,15 @@ const Map = () => {
 
     return (
       <React.Fragment key={i}>
+        <Polyline positions={[assertedLatLngDeg, trueLatLngDeg, estLatLngDeg]} color="#00ff9f" weight={1} />
         {/* {i > 0 && <GeodesicLine points={[node0TrueLatLngDeg, trueLatLngDeg]} options={{ color: "gray", opacity: 0.5 }} />} */}
-        <CircleMarker center={estLatLngDeg} color="blue" fill fillColor="blue" radius={3} />
-        <CircleMarker center={assertedLatLngDeg} color="orange" fill fillColor="orange" radius={3} />
-        <CircleMarker center={trueLatLngDeg} color="green" fill fillColor="green" radius={4} />
+        <CircleMarker center={estLatLngDeg} color="#00b8ff" fill fillColor="#00b8ff" radius={3} />
+        <CircleMarker center={assertedLatLngDeg} color="#8b00ff" fill fillColor="#8b00ff" radius={3} />
 
-        <GeodesicLine points={[trueLatLngDeg, assertedLatLngDeg]} options={{ color: "orange" }} />
-        <GeodesicLine points={[trueLatLngDeg, estLatLngDeg]} options={{ color: "blue" }} />
+        {/* <CircleMarker center={trueLatLngDeg} color="#00ff9f" fill fillColor="#00ff9f" radius={4} /> */}
+
+        {/* <GeodesicLine points={[trueLatLngDeg, assertedLatLngDeg]} options={{ color: "ff8c00" }} />
+        <GeodesicLine points={[trueLatLngDeg, estLatLngDeg]} options={{ color: "#00b8ff" }} /> */}
         <Marker position={trueLatLngDeg} icon={L.divIcon({
           className: 'leaflet-custom-marker',
           html: `<div>${i}</div>`,

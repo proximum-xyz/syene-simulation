@@ -47,6 +47,7 @@ impl Node {
             estimated_index: asserted_index,
             true_position,
             estimated_position,
+            estimation_variances: Vec::new(),
             true_wgs84: WGS84::from(true_position),
             // asserted and estimated position will diverge as the simulation progresses
             estimated_wgs84: WGS84::from(estimated_position),
@@ -65,7 +66,13 @@ impl Node {
         }
     }
 
-    fn update_estimated_position(&mut self, measurement: ECEF<f64>) {
+    fn update_estimated_position(&mut self) {
+        let state = self.state_and_covariance.state();
+        let covariance = self.state_and_covariance.covariance();
+
+        self.estimation_variance = covariance.diagonal();
+
+        let measurement = ECEF::new(state.x, state.y, state.z);
         self.estimated_position = measurement;
         self.estimated_wgs84 = WGS84::from(measurement);
         self.estimated_index = ecef_to_h3(measurement, Resolution::try_from(10).unwrap());
@@ -167,12 +174,12 @@ impl Simulation {
             .step(&node.state_and_covariance, &distances)
             .expect("bad kalman filter step");
 
-        let state = node.state_and_covariance.state();
+        // let state_and_covariance = node.state_and_covariance.state();
 
         trace!("finished Kalman filter step");
 
-        // record new location in various reference frames
-        node.update_estimated_position(ECEF::new(state.x, state.y, state.z));
+        // record new location and variance in various (redundant) reference frames
+        node.update_estimated_position();
 
         trace!(
             "Node {}: true position: {:?}, estimated position: {:?}, error: {:?} meters",

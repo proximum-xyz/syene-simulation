@@ -21,10 +21,33 @@ code {
 
 .leaflet-custom-marker {
   color: white;
-  /* background-color: white; */
-  border: 1px solid green;
+  background-color: #1f1f1f99;
+  border: 1px solid #00ff9f;
   border-radius: 50%;
   text-align: center;
   font-weight: bold;
   line-height: 30px;
+}
+
+a {
+  color: #ff4081;
+  text-decoration: none;
+}
+
+.leaflet-container a {
+  color: #ff4081;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #ff4081;
+  text-decoration: underline;
+}
+
+a:active {
+  color: #ff4081;
+}
+
+a:visited {
+  color: #8b00ff;
 }
