@@ -2,14 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-// import * as h3 from 'h3-js';
-import init, { simulate, get_compile_parameters, initSync } from 'rust-proximum-simulation';
-import SimulationControls, { SimulationParams } from './SimulationControls';
-import { CompileParameters, Node, Simulation } from '../types';
+import init, { simulate, get_compile_parameters, InitOutput } from 'rust-proximum-simulation';
+import { CompilerParams, Simulation, SimulationParams } from '../types';
 import IntroModal from './IntroModal';
 import GeodesicLine from './GeodesicLine';
-
-import Stats from './Stats';
+import SimulationOverlay from './SimulationOverlay';
 
 function rad2deg(radians: number) {
   return radians * 180 / Math.PI;
@@ -18,15 +15,13 @@ function rad2deg(radians: number) {
 const Map = () => {
   const [simulation, setSimulation] = useState<Simulation>();
   const [showIntroModal, setShowIntroModal] = useState(true);
-  const [compileParameters, setCompilerParameters] = useState<CompileParameters>();
+
+  // initialize WASM
+  const [wasm, setWasm] = useState<InitOutput>();
 
   useEffect(() => {
     (async () => {
-      await init(); // initialize WASM code
-
-      // get the compile parameters from the WASM code
-      const compileParameters = JSON.parse(get_compile_parameters());
-      setCompilerParameters(compileParameters);
+      setWasm(await init());
     })()
   }, []);
 
@@ -35,8 +30,8 @@ const Map = () => {
       simulationParams.nNodes,
       simulationParams.nEpochs,
       simulationParams.h3Resolution,
-      // convert km^2 to meters^2
-      simulationParams.realAssertedPositionVariance * 1000 * 1000,
+      // convert km stddev to meters^2 variance
+      (simulationParams.realAssertedPositionStddev * 1000) ** 2,
       simulationParams.realChannelSpeed[0],
       simulationParams.realChannelSpeed[1],
       // convert µs to seconds
@@ -45,10 +40,10 @@ const Map = () => {
       simulationParams.realLatency[1] * 1e-6,
       // convert km to meters
       simulationParams.modelDistanceMax * 1000,
-      // convert km to meters
-      simulationParams.modelStateVariance * 1000 * 1000,
-      // convert km to meters
-      simulationParams.modelMeasurementVariance * 1000 * 1000,
+      // convert km stddev to meters variance
+      (simulationParams.modelStateStddev * 1000) ** 2,
+      // convert km stddev to meters variance
+      (simulationParams.modelMeasurementStddev * 1000) ** 2,
       simulationParams.modelSignalSpeedFraction,
       // convert µs to seconds
       simulationParams.modelNodeLatency * 1e-6,
@@ -60,7 +55,6 @@ const Map = () => {
 
   const closeIntroModal = () => setShowIntroModal(false);
 
-
   if (showIntroModal) {
     return <IntroModal onClose={closeIntroModal} />;
   }
@@ -69,7 +63,7 @@ const Map = () => {
     const trueLatLngDeg = [node.true_wgs84.latitude, node.true_wgs84.longitude].map(rad2deg) as [number, number];
     const estLatLngDeg = [node.estimated_wgs84.latitude, node.estimated_wgs84.longitude].map(rad2deg) as [number, number];
     const assertedLatLngDeg = [node.asserted_wgs84.latitude, node.asserted_wgs84.longitude].map(rad2deg) as [number, number];
-    const node0TrueLatLngDeg = [simulation.nodes[0].true_wgs84.latitude, simulation.nodes[0].true_wgs84.longitude].map(rad2deg) as [number, number]
+    // const node0TrueLatLngDeg = [simulation.nodes[0].true_wgs84.latitude, simulation.nodes[0].true_wgs84.longitude].map(rad2deg) as [number, number]
 
     return (
       <React.Fragment key={i}>
@@ -92,7 +86,7 @@ const Map = () => {
 
   return (
     <>
-      <MapContainer center={[0, 0]} zoom={3} zoomControl={false} style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: '100%' }}>
+      <MapContainer center={[0, 0]} zoom={3} zoomControl={false} style={{ position: 'absolute', top: 0, left: 0, height: '100vh', width: '100%' }}>
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution="&copy; OpenStreetMap contributors &copy; CARTO"
@@ -103,13 +97,12 @@ const Map = () => {
         />
 
         {nodeContent}
-        {/* <Pane name="custom-control-pane" style={{ zIndex: 1000000, position: 'absolute', top: 0, left: 0, height: '100%', width: '100%' }}> */}
-        {compileParameters && <div style={{ zIndex: 1000000, position: 'absolute', top: 0, left: 0, height: '100%', width: '100%' }}>
-          <SimulationControls runSimulation={runSimulation} nMeasurements={compileParameters.n_measurements} />
 
-          {simulation?.stats && <Stats stats={simulation.stats} />}
-        </div>}
-        {/* </Pane> */}
+        {wasm && <SimulationOverlay
+          runSimulation={runSimulation}
+          simulation={simulation}
+          wasm={wasm}
+        />}
       </MapContainer >
 
     </>

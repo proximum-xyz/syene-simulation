@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use crate::{
     kalman::N_MEASUREMENTS,
-    types::{CompileParameters, Simulation},
+    types::{CompilerParams, Simulation},
 };
 use console_log::init_with_level;
 use log::LevelFilter;
@@ -61,7 +61,7 @@ pub fn simulate(
 
 #[wasm_bindgen]
 pub fn get_compile_parameters() -> String {
-    let parameters: CompileParameters = CompileParameters {
+    let parameters: CompilerParams = CompilerParams {
         n_measurements: N_MEASUREMENTS,
     };
     let json = serde_json::to_string(&parameters).unwrap();

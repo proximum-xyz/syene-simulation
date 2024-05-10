@@ -1,11 +1,14 @@
 import React from 'react';
-import Map from './Map/Map';
+import Map from './simulation/Map';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 const App = () => {
   return (
-    <div>
-      <Map />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Map />} />
+      </Routes>
+    </Router>
   );
 };
 

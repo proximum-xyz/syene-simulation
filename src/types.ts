@@ -4,7 +4,7 @@ export interface WGS84 {
   altitude: number;
 }
 
-export interface CompileParameters {
+export interface CompilerParams {
   n_measurements: number;
 }
 
@@ -27,6 +27,23 @@ export interface Stats {
   assertion_stddev: number[];
 }
 
+// These are the parameters we set for a new simulation
+export interface SimulationParams {
+  nNodes: number;
+  nMeasurements: number,
+  nEpochs: number;
+  h3Resolution: number;
+  realAssertedPositionStddev: number;
+  realChannelSpeed: [number, number];
+  realLatency: [number, number];
+  modelDistanceMax: number;
+  modelStateStddev: number;
+  modelMeasurementStddev: number;
+  modelSignalSpeedFraction: number;
+  modelNodeLatency: number;
+}
+
+// this is what we get back from the Rust simulate call
 export interface Simulation {
   n_nodes: number;
   n_epochs: number;

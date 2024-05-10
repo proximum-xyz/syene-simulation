@@ -19,7 +19,7 @@ mod serialize_ecef {
 }
 
 #[derive(Serialize)]
-pub struct CompileParameters {
+pub struct CompilerParams {
     pub n_measurements: usize,
 }
 

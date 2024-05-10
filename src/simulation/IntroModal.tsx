@@ -51,26 +51,25 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ onClose }) => {
     <ModalWrapper>
       <ModalContent>
         <Title>Proximum: Syene Testnet Sim</Title>
-        <Description>
-          This app simulates the basics of the Proximum location network -- think GPS, but onchain.
-          <h3>How do I use it?</h3>
-          <p>Click on the map to drop a user there. Proximum estimates their location by pinging local nodes.</p>
-          <ul>
-            <li><strong>Blue dot</strong>: real locations</li>
-            <li><strong>Orange dot</strong>: estimated locations</li>
-            <li><strong>Gray lines</strong>: paths to nearby nodes</li>
-          </ul>
-          <p>
-            Configure network parameters to see how they affect the accuracy of position estimates.</p>
-          <ul>
-            <li>
-              <strong>Physical Parameters</strong> define the real network of nodes.
-            </li>
-            <li>
-              <strong>Model Parameters</strong> define Proximum&apos;s internal simplified network model.
-            </li>
-          </ul>
-        </Description>
+        This app simulates the basics of the Proximum location network -- think GPS, but onchain.
+        <h3>How do I use it?</h3>
+        <p>Click on the map to drop a user there. Proximum estimates their location by pinging local nodes.</p>
+        <ul>
+          <li><strong>Blue dot</strong>: real locations</li>
+          <li><strong>Orange dot</strong>: estimated locations</li>
+          <li><strong>Gray lines</strong>: paths to nearby nodes</li>
+        </ul>
+        <p>
+          Configure network parameters to see how they affect the accuracy of position estimates.
+        </p>
+        <ul>
+          <li>
+            <strong>Physical Parameters</strong> define the real network of nodes.
+          </li>
+          <li>
+            <strong>Model Parameters</strong> define Proximum&apos;s internal simplified network model.
+          </li>
+        </ul>
         <CloseButton onClick={onClose}>Start</CloseButton>
       </ModalContent>
     </ModalWrapper>
