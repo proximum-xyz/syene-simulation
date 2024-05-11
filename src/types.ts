@@ -4,6 +4,14 @@ export interface WGS84 {
   altitude: number;
 }
 
+export enum COLORS {
+  green = "#00ff9f",
+  blue = "#00b8ff",
+  orange = "#ff8c00",
+  pink = "#ff4081",
+  purple = "#8b00ff"
+}
+
 export interface CompilerParams {
   n_measurements: number;
 }
@@ -16,6 +24,10 @@ export interface Node {
   true_position: [number, number, number];
   estimated_position: [number, number, number];
   estimation_variance: [number, number, number];
+  en_variance_semimajor_axis: [number, number],
+  en_variance_semiminor_axis: [number, number],
+  en_variance_semimajor_axis_length: number,
+  en_variance_semiminor_axis_length: number,
   true_wgs84: WGS84;
   estimated_wgs84: WGS84;
   asserted_wgs84: WGS84;

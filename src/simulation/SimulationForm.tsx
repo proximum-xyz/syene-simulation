@@ -9,8 +9,8 @@ type SimulationParamFields = {
 }
 
 const defaultSimulationParams: SimulationParams = {
-  nNodes: 25,
-  nMeasurements: 1,
+  nNodes: 2,
+  nMeasurements: 5,
   nEpochs: 4,
   h3Resolution: 7,
   // km
@@ -22,9 +22,9 @@ const defaultSimulationParams: SimulationParams = {
   // km
   modelDistanceMax: 13_000.0,
   // km
-  modelStateStddev: 0.1,
+  modelStateStddev: 100,
   // km
-  modelMeasurementStddev: 0.1,
+  modelMeasurementStddev: 100,
   // c
   modelSignalSpeedFraction: 0.85,
   // µs

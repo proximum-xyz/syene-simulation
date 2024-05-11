@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Marker, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L, { Elli } from 'leaflet';
+import L from 'leaflet';
+import Ellipse, { EllipseProps } from './LeafletEllipse';
 import init, { simulate, get_compile_parameters, InitOutput } from 'rust-proximum-simulation';
-import { CompilerParams, Simulation, SimulationParams } from '../types';
+import { COLORS, CompilerParams, Simulation, SimulationParams } from '../types';
 import IntroModal from './IntroModal';
 import GeodesicLine from './GeodesicLine';
 import SimulationOverlay from './SimulationOverlay';
@@ -12,9 +13,18 @@ function rad2deg(radians: number) {
   return radians * 180 / Math.PI;
 }
 
-const varianceEllipse = () => {
-
-}
+const display = {
+  center: [38.839827, -82.746378],
+  radii: [80000, 50000],
+  tilt: 90,
+  options: {
+    color: '#ff7961',
+    fillColor: '#ff7961',
+    fillOpacity: 0.5,
+    opacity: 1,
+    weight: 2,
+  },
+};
 
 const Map = () => {
   const [simulation, setSimulation] = useState<Simulation>();
@@ -69,24 +79,43 @@ const Map = () => {
     const assertedLatLngDeg = [node.asserted_wgs84.latitude, node.asserted_wgs84.longitude].map(rad2deg) as [number, number];
     // const node0TrueLatLngDeg = [simulation.nodes[0].true_wgs84.latitude, simulation.nodes[0].true_wgs84.longitude].map(rad2deg) as [number, number]
 
+    const ellipseTilt = rad2deg(Math.atan2(node.en_variance_semimajor_axis[1], node.en_variance_semimajor_axis[1]));
+    const ellipseConfig: EllipseProps = {
+      center: estLatLngDeg,
+      radii: [node.en_variance_semimajor_axis_length, node.en_variance_semiminor_axis_length],
+      tilt: ellipseTilt,
+      options: {
+        color: COLORS.blue
+      }
+    }
+
+    console.log('***', { ellipseConfig });
+
+
     return (
       <React.Fragment key={i}>
-        <Polyline positions={[assertedLatLngDeg, trueLatLngDeg, estLatLngDeg]} color="#00ff9f" weight={1} />
+        <Polyline positions={[assertedLatLngDeg, trueLatLngDeg, estLatLngDeg]} color={COLORS.green} weight={1} />
         {/* {i > 0 && <GeodesicLine points={[node0TrueLatLngDeg, trueLatLngDeg]} options={{ color: "gray", opacity: 0.5 }} />} */}
-        <CircleMarker center={estLatLngDeg} color="#00b8ff" fill fillColor="#00b8ff" radius={3} />
-        <CircleMarker center={assertedLatLngDeg} color="#8b00ff" fill fillColor="#8b00ff" radius={3} />
+        <CircleMarker center={estLatLngDeg} color={COLORS.blue} fill fillColor={COLORS.blue} radius={3} />
+        <CircleMarker center={assertedLatLngDeg} color={COLORS.purple} fill fillColor={COLORS.purple} radius={3} />
 
-        {/* <CircleMarker center={trueLatLngDeg} color="#00ff9f" fill fillColor="#00ff9f" radius={4} /> */}
+        {/* 1 standard deviation location confidence ellipse */}
+
+        <Ellipse {...ellipseConfig}>
+          <Popup>Poppy McPopup</Popup>
+        </Ellipse>
+
+        {/* <CircleMarker center={trueLatLngDeg} color={COLORS.green} fill fillColor={COLORS.green} radius={4} /> */}
 
         {/* <GeodesicLine points={[trueLatLngDeg, assertedLatLngDeg]} options={{ color: "ff8c00" }} />
-        <GeodesicLine points={[trueLatLngDeg, estLatLngDeg]} options={{ color: "#00b8ff" }} /> */}
+        <GeodesicLine points={[trueLatLngDeg, estLatLngDeg]} options={{ color: COLORS.blue }} /> */}
         <Marker position={trueLatLngDeg} icon={L.divIcon({
           className: 'leaflet-custom-marker',
           html: `<div>${i}</div>`,
           iconSize: [30, 30],
           iconAnchor: [15, 15]
         })} />
-      </React.Fragment>
+      </React.Fragment >
     );
   }) : null;
 
