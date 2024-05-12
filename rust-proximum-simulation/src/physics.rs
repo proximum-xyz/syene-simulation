@@ -33,7 +33,7 @@ pub fn simulate_distance_measurement(
     let estimated_distance =
         (total_time / 2.0 - model_node_latency) * C * model_signal_speed_fraction;
 
-    info!(
+    trace!(
         "true distance: {}, estimated distance, {}, % error {}",
         true_distance,
         estimated_distance,

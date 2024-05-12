@@ -11,24 +11,24 @@ type SimulationParamFields = {
 const defaultSimulationParams: SimulationParams = {
   nNodes: 100,
   nMeasurements: 10,
-  nEpochs: 10,
+  nEpochs: 25,
   h3Resolution: 7,
   // km
-  realAssertedPositionStddev: 10,
+  realAssertedPositionStddev: 100,
   // c
-  realChannelSpeed: [0.7, 1],
+  realChannelSpeed: [0.5, 0.7],
   // µs
-  realLatency: [20000, 30000],
+  realLatency: [5000, 10000],
   // km
-  modelDistanceMax: 13_000.0,
+  modelDistanceMax: 5_000.0,
   // km
-  modelStateStddev: 1000,
+  modelStateStddev: 10,
   // km
   modelMeasurementStddev: 1000,
   // c
-  modelSignalSpeedFraction: 0.85,
+  modelSignalSpeedFraction: 0.6,
   // µs
-  modelNodeLatency: 25000,
+  modelNodeLatency: 15000,
 };
 
 interface SimulationFormProps {

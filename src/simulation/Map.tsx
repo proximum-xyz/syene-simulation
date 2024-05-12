@@ -132,7 +132,9 @@ const Map = () => {
         <Polyline positions={[assertedLatLngDeg, trueLatLngDeg, estLatLngDeg]} color={COLORS.green} weight={1} />
         {/* {i > 0 && <GeodesicLine points={[node0TrueLatLngDeg, trueLatLngDeg]} options={{ color: "gray", opacity: 0.5 }} />} */}
         <CircleMarker center={estLatLngDeg} color={COLORS.blue} fill fillColor={COLORS.blue} radius={3} />
-        <CircleMarker center={assertedLatLngDeg} color={COLORS.purple} fill fillColor={COLORS.purple} radius={3} />
+        <CircleMarker center={assertedLatLngDeg} color={COLORS.purple} fill fillColor={COLORS.purple} radius={3}>
+          <DarkModePopup>Node {i}: asserted position</DarkModePopup>
+        </CircleMarker>
 
         {/* 1 standard deviation location confidence ellipse */}
 
