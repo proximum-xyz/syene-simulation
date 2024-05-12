@@ -19,6 +19,19 @@ mod serialize_ecef {
     }
 }
 
+mod serialize_h3_index {
+    use super::*;
+    use serde::Serializer;
+
+    pub fn serialize<S>(index: &CellIndex, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let hex_string = format!("{:x}", index);
+        serializer.serialize_str(&hex_string)
+    }
+}
+
 #[derive(Serialize)]
 pub struct CompilerParams {
     pub n_measurements: usize,
@@ -27,11 +40,16 @@ pub struct CompilerParams {
 #[derive(Serialize)]
 pub struct Node {
     pub id: usize,
+    #[serde(with = "serialize_h3_index")]
     pub true_index: CellIndex,
+    #[serde(with = "serialize_h3_index")]
     pub asserted_index: CellIndex,
+    #[serde(with = "serialize_h3_index")]
     pub estimated_index: CellIndex,
     #[serde(with = "serialize_ecef")]
     pub true_position: ECEF<f64>,
+    #[serde(with = "serialize_ecef")]
+    pub asserted_position: ECEF<f64>,
     #[serde(with = "serialize_ecef")]
     pub estimated_position: ECEF<f64>,
     pub estimation_variance: OVector<f64, SS>,
@@ -55,7 +73,7 @@ pub struct Stats {
     // meters
     pub estimation_rms_error: Vec<f64>,
     // meters
-    pub assertion_stddev: Vec<f64>,
+    pub assertion_rms_error: Vec<f64>,
 }
 
 #[derive(Serialize)]

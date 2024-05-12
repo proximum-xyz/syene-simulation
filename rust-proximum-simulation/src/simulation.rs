@@ -12,11 +12,19 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use rand::Rng;
 
-fn calculate_rms_error(nodes: &[Node]) -> f64 {
+enum PositionType {
+    Estimated,
+    Asserted,
+}
+
+fn calculate_rms_error(nodes: &[Node], position_type: PositionType) -> f64 {
     let mut squared_diff_sum = 0.0;
 
     for node in nodes {
-        let diff = node.true_position - node.estimated_position;
+        let diff = match position_type {
+            PositionType::Estimated => node.true_position - node.estimated_position,
+            PositionType::Asserted => node.true_position - node.asserted_position,
+        };
         let squared_diff = diff.norm().powi(2);
         squared_diff_sum += squared_diff;
     }
@@ -38,7 +46,7 @@ impl Node {
         model_state_variance: f64,
     ) -> Self {
         let true_position = h3_to_ecef(true_index);
-        let estimated_position = h3_to_ecef(asserted_index);
+        let asserted_position = h3_to_ecef(asserted_index);
 
         Node {
             id,
@@ -46,7 +54,8 @@ impl Node {
             asserted_index,
             estimated_index: asserted_index,
             true_position,
-            estimated_position,
+            asserted_position,
+            estimated_position: asserted_position,
             estimation_variance: OVector::<f64, SS>::zeros(),
             en_variance_semimajor_axis: OVector::<f64, Const<2>>::zeros(),
             en_variance_semiminor_axis: OVector::<f64, Const<2>>::zeros(),
@@ -54,16 +63,16 @@ impl Node {
             en_variance_semiminor_axis_length: 0.0,
             true_wgs84: WGS84::from(true_position),
             // asserted and estimated position will diverge as the simulation progresses
-            estimated_wgs84: WGS84::from(estimated_position),
-            asserted_wgs84: WGS84::from(estimated_position),
+            estimated_wgs84: WGS84::from(asserted_position),
+            asserted_wgs84: WGS84::from(asserted_position),
             channel_speed,
             latency,
             state_and_covariance: StateAndCovariance::new(
                 // dummy state for now
                 OVector::<f64, SS>::new(
-                    estimated_position.x(),
-                    estimated_position.y(),
-                    estimated_position.z(),
+                    asserted_position.x(),
+                    asserted_position.y(),
+                    asserted_position.z(),
                 ),
                 OMatrix::<f64, SS, SS>::identity() * model_state_variance,
             ),
@@ -153,7 +162,7 @@ impl Simulation {
             nodes,
             stats: Stats {
                 estimation_rms_error: Vec::new(),
-                assertion_stddev: Vec::new(),
+                assertion_rms_error: Vec::new(),
             },
         }
     }
@@ -189,13 +198,18 @@ impl Simulation {
 
         trace!("built kalman filter");
 
+        trace!("state before: {:#?}", node.state_and_covariance);
+
         node.state_and_covariance = kf
             .step(&node.state_and_covariance, &distances)
             .expect("bad kalman filter step");
 
-        // let state_and_covariance = node.state_and_covariance.state();
+        trace!("state after: {:#?}", node.state_and_covariance);
 
         trace!("finished Kalman filter step");
+
+        // record new position in various coordinates
+        node.update_estimated_position();
     }
 
     pub fn run_simulation(&mut self) -> bool {
@@ -206,6 +220,15 @@ impl Simulation {
         let observation_model_generator = NonlinearObservationModel::new();
 
         let mut rng = thread_rng();
+
+        // Push the initial stats
+        self.stats
+            .estimation_rms_error
+            .push(calculate_rms_error(&self.nodes, PositionType::Estimated));
+
+        self.stats
+            .assertion_rms_error
+            .push(calculate_rms_error(&self.nodes, PositionType::Asserted));
 
         for i in 0..self.n_epochs {
             info!("Running epoch {}!", i);
@@ -219,27 +242,14 @@ impl Simulation {
             }
 
             // calculate the mean squared error for this epoch
+            // Push the initial stats
             self.stats
                 .estimation_rms_error
-                .push(calculate_rms_error(&self.nodes));
+                .push(calculate_rms_error(&self.nodes, PositionType::Estimated));
 
-            // log the (constant) error in the asserted position
             self.stats
-                .assertion_stddev
-                .push(self.real_asserted_position_variance.sqrt());
-        }
-
-        // record new location and variance in various (redundant) reference frames for easier display
-        for node in &mut self.nodes {
-            node.update_estimated_position();
-
-            trace!(
-                "Node {}: true position: {:?}, estimated position: {:?}, error: {:?} meters",
-                node.id,
-                node.true_position,
-                node.estimated_position,
-                (node.true_position - node.estimated_position).norm()
-            );
+                .assertion_rms_error
+                .push(calculate_rms_error(&self.nodes, PositionType::Asserted));
         }
         true
     }

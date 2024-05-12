@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Popup, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import Ellipse, { EllipseProps } from './LeafletEllipse';
@@ -8,10 +8,33 @@ import { COLORS, CompilerParams, Simulation, SimulationParams } from '../types';
 import IntroModal from './IntroModal';
 import GeodesicLine from './GeodesicLine';
 import SimulationOverlay from './SimulationOverlay';
+import styled from 'styled-components';
+import { CoordPair, cellToBoundary } from 'h3-js';
 
 function rad2deg(radians: number) {
   return radians * 180 / Math.PI;
 }
+
+const DarkModePopup = styled(Popup)`
+  .leaflet-popup-content-wrapper {
+    background-color: #1f1f1f;
+    color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .leaflet-popup-tip {
+    background-color: #1f1f1f;
+  }
+
+  .leaflet-popup-close-button {
+    color: #ffffff;
+  }
+
+  .leaflet-popup-close-button:hover {
+    color: #ff4081;
+  }
+`;
 
 const display = {
   center: [38.839827, -82.746378],
@@ -65,6 +88,9 @@ const Map = () => {
 
     const sim = JSON.parse(simString);
     setSimulation(sim);
+
+    console.log('***', { sim });
+
   }
 
   const closeIntroModal = () => setShowIntroModal(false);
@@ -74,26 +100,35 @@ const Map = () => {
   }
 
   const nodeContent = (simulation && simulation.nodes.length > 0) ? simulation.nodes.map((node, i) => {
+    // asserted H3 index
+    const assertedPolygonBoundary = cellToBoundary(node.asserted_index);
+    const estimatedPolygonBoundary = cellToBoundary(node.estimated_index);
     const trueLatLngDeg = [node.true_wgs84.latitude, node.true_wgs84.longitude].map(rad2deg) as [number, number];
-    const estLatLngDeg = [node.estimated_wgs84.latitude, node.estimated_wgs84.longitude].map(rad2deg) as [number, number];
     const assertedLatLngDeg = [node.asserted_wgs84.latitude, node.asserted_wgs84.longitude].map(rad2deg) as [number, number];
-    // const node0TrueLatLngDeg = [simulation.nodes[0].true_wgs84.latitude, simulation.nodes[0].true_wgs84.longitude].map(rad2deg) as [number, number]
+    const estLatLngDeg = [node.estimated_wgs84.latitude, node.estimated_wgs84.longitude].map(rad2deg) as [number, number];
 
-    const ellipseTilt = rad2deg(Math.atan2(node.en_variance_semimajor_axis[1], node.en_variance_semimajor_axis[1]));
+    // Convert covariances to standard deviations: the ellipse represents the 1 Std. Dev. confidence interval.
+    const ellipseRadii1StdDev = [node.en_variance_semimajor_axis_length, node.en_variance_semiminor_axis_length].map(Math.sqrt) as [number, number];
+    const ellipseTilt = rad2deg(Math.atan2(node.en_variance_semimajor_axis[1], node.en_variance_semimajor_axis[0]));
     const ellipseConfig: EllipseProps = {
       center: estLatLngDeg,
-      radii: [node.en_variance_semimajor_axis_length, node.en_variance_semiminor_axis_length],
+      radii: ellipseRadii1StdDev,
       tilt: ellipseTilt,
       options: {
         color: COLORS.blue
       }
     }
 
-    console.log('***', { ellipseConfig });
+    // console.log(`*** (${node.en_variance_semimajor_axis[0]}, ${node.en_variance_semimajor_axis[1]}) angle ${Math.atan2(node.en_variance_semimajor_axis[1], node.en_variance_semimajor_axis[1])} ogatan ${Math.atan(node.en_variance_semimajor_axis[1], node.en_variance_semimajor_axis[1])}`,);
 
 
     return (
       <React.Fragment key={i}>
+        {/* H3 tilse */}
+        <Polygon positions={assertedPolygonBoundary} color={COLORS.purple} fillColor={COLORS.purple} fillOpacity={0.2} weight={1}>
+          <DarkModePopup>Node {i}: asserted H3 polygon {node.asserted_index}</DarkModePopup>
+        </Polygon>
+
         <Polyline positions={[assertedLatLngDeg, trueLatLngDeg, estLatLngDeg]} color={COLORS.green} weight={1} />
         {/* {i > 0 && <GeodesicLine points={[node0TrueLatLngDeg, trueLatLngDeg]} options={{ color: "gray", opacity: 0.5 }} />} */}
         <CircleMarker center={estLatLngDeg} color={COLORS.blue} fill fillColor={COLORS.blue} radius={3} />
@@ -102,7 +137,7 @@ const Map = () => {
         {/* 1 standard deviation location confidence ellipse */}
 
         <Ellipse {...ellipseConfig}>
-          <Popup>Poppy McPopup</Popup>
+          <DarkModePopup>Node {i}: estimated position and 1σ uncertainty ellipse</DarkModePopup>
         </Ellipse>
 
         {/* <CircleMarker center={trueLatLngDeg} color={COLORS.green} fill fillColor={COLORS.green} radius={4} /> */}
@@ -114,7 +149,9 @@ const Map = () => {
           html: `<div>${i}</div>`,
           iconSize: [30, 30],
           iconAnchor: [15, 15]
-        })} />
+        })}>
+          <DarkModePopup>Node {i}: true position</DarkModePopup>
+        </Marker>
       </React.Fragment >
     );
   }) : null;

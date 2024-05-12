@@ -3,20 +3,44 @@ use log::{info, trace};
 use nalgebra::OVector;
 use rand::prelude::*;
 
-// const C: f64 = 299_792_458.0; // speed of light in m/s
+const C: f64 = 299_792_458.0; // speed of light in m/s
 
-// simulate a two-way time of flight measurement to another node
-// the measurement has a basic constant model for signal speed and node latency
-// but the actual time of flight depends on the variable signal speed and latency of the nodes
 pub fn simulate_distance_measurement(
     n1: &Node,
     n2: &Node,
-    _model_signal_speed_fraction: f64,
-    _model_node_latency: f64,
+    model_signal_speed_fraction: f64,
+    model_node_latency: f64,
 ) -> f64 {
-    // True distance multiplied by a constant factor
-    // TODO: better fake measurements
-    (n1.true_position - n2.true_position).norm()
+    // simulate a two-way time of flight measurement to another node
+    // the measurement has a basic constant model for signal speed and node latency
+    // but the actual time of flight depends on the variable signal speed and latency of the nodes
+    // * each measurement consists of a ping from node n1 to node n2 and a pong from node n2 to node n1.
+    // * the distance estimation models the time it would take for a ping and pong to occur using a fixed message transmission speed (% of c) and fixed latency (s) for each node to respond.
+    // * the actual time taken by the ping is determined by the message speed c * n1.channel_speed plus n1.latency
+    // * the actual time taken by the pong is determined by the message speed c * n2.channel_speed plus n2.latency
+    let true_distance = (n1.true_position - n2.true_position).norm();
+
+    // Calculate the time taken for the ping
+    let ping_time = true_distance / (C * n1.channel_speed) + n1.latency;
+
+    // Calculate the time taken for the pong
+    let pong_time = true_distance / (C * n2.channel_speed) + n2.latency;
+
+    // Calculate the total time for the ping-pong round trip
+    let total_time = ping_time + pong_time;
+
+    // Calculate the estimated distance based on the model parameters
+    let estimated_distance =
+        (total_time - 2.0 * model_node_latency) * C * model_signal_speed_fraction;
+
+    info!(
+        "true distance: {}, estimated distance, {}, % error {}",
+        true_distance,
+        estimated_distance,
+        (estimated_distance - true_distance) / true_distance
+    );
+
+    estimated_distance
 }
 
 // Simulate a bunch of real world measurements between node at one index and other nodes.

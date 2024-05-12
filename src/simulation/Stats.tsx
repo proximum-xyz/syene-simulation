@@ -8,6 +8,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  Label,
 } from 'recharts';
 import { Simulation } from '../types';
 import styled from 'styled-components';
@@ -33,23 +34,28 @@ const Stats = ({ stats }: { stats: Simulation['stats'] }) => {
   for (let i = 0; i < stats.estimation_rms_error.length; i++) {
     data.push({
       epoch: i,
-      rmsError: stats.estimation_rms_error[i],
-      assertionStddev: stats.assertion_stddev[i],
+      // convert from m to km
+      rmsError: stats.estimation_rms_error[i] / 1000,
+      assertionStddev: stats.assertion_rms_error[i] / 1000,
     });
   }
 
   const formatTooltipValue = (value: number) => {
-    return `${Math.round(value / 1000)} km`;
+    return `${value.toFixed(2)} km`;
   };
 
   return (
     <StatsContainer>
-      <StatsTitle>Simulation Statistics</StatsTitle>
+      <StatsTitle>Position Error</StatsTitle>
       <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+        <LineChart data={data} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
           <CartesianGrid stroke="#444" strokeDasharray="5 5" />
-          {/* <XAxis dataKey="epoch" tick={{ fill: '#fff' }} /> */}
-          <YAxis tick={{ fill: '#fff' }} />
+          <XAxis dataKey="epoch" tick={{ fill: '#fff' }}>
+            <Label value="Epoch" position="insideBottom" offset={-10} style={{ fill: '#fff' }} />
+          </XAxis>
+          <YAxis tick={{ fill: '#fff' }}>
+            <Label value="RMS Error (km)" position="insideBottom" angle={-90} offset={20} style={{ fill: '#fff' }} />
+          </YAxis>
           <Tooltip
             contentStyle={{ backgroundColor: '#1d1d1d', color: '#fff' }}
             formatter={formatTooltipValue}
@@ -59,7 +65,7 @@ const Stats = ({ stats }: { stats: Simulation['stats'] }) => {
             type="monotone"
             dataKey="rmsError"
             stroke="#00b8ff"
-            name="Estimated Position RMS Error"
+            name="Estimation"
             dot={{ fill: '#333' }}
             activeDot={{ fill: '#00b8ff', stroke: '#00b8ff', strokeWidth: 2, r: 6 }}
           />
@@ -67,7 +73,7 @@ const Stats = ({ stats }: { stats: Simulation['stats'] }) => {
             type="monotone"
             dataKey="assertionStddev"
             stroke="#8b00ff"
-            name="Asserted Position Std. Dev."
+            name="Assertion"
             dot={{ fill: '#333' }}
             activeDot={{ fill: '#8b00ff', stroke: '#8b00ff', strokeWidth: 2, r: 6 }}
           />

@@ -19,9 +19,10 @@ export interface CompilerParams {
 export interface Node {
   id: number;
   true_index: number;
-  asserted_index: number;
-  estimated_index: number;
+  asserted_index: string;
+  estimated_index: string;
   true_position: [number, number, number];
+  asserted_position: [number, number, number];
   estimated_position: [number, number, number];
   estimation_variance: [number, number, number];
   en_variance_semimajor_axis: [number, number],
@@ -37,7 +38,7 @@ export interface Node {
 
 export interface Stats {
   estimation_rms_error: number[];
-  assertion_stddev: number[];
+  assertion_rms_error: number[];
 }
 
 // These are the parameters we set for a new simulation

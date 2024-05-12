@@ -1,4 +1,4 @@
-use h3o::{CellIndex, LatLng, Resolution, EARTH_RADIUS_KM};
+use h3o::{CellIndex, LatLng, Resolution};
 use rand::Rng;
 use std::f64::consts::PI;
 extern crate nav_types;
@@ -6,8 +6,6 @@ use nav_types::{ECEF, ENU, WGS84};
 use rand::thread_rng;
 use rand_distr::Distribution;
 use rand_distr::Normal;
-
-pub const EARTH_RADIUS: f64 = EARTH_RADIUS_KM * 1000.0;
 
 pub fn h3_to_ecef(h3_index: CellIndex) -> ECEF<f64> {
     let lat_lng = LatLng::from(h3_index);
