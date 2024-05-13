@@ -34,7 +34,7 @@
     "eject": "react-scripts eject",
     "lint": "eslint './src/**/*.{js,jsx,ts,tsx}'",
     "lint:fix": "eslint './src/**/*.{js,jsx,ts,tsx}' --fix",
-    "transpile-wasm": "cd rust-proximum-simulation && wasm-pack build --target web --out-dir pkg --debug"
+    "compile-wasm": "cd rust-proximum-simulation && wasm-pack build --target web --out-dir pkg --debug"
   },
   "eslintConfig": {
     "extends": [
