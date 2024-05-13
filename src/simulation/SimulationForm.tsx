@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CompilerParams, SimulationParams } from '../types';
 import { SectionHeader1, SectionHeader2, FormWrapper, FormField, Button, ProgressIndicator } from './SimulationFormComponents';
 import styled from 'styled-components';
+import { useSearchParams } from 'react-router-dom';
 
 type SimulationParamFields = {
   [k in keyof SimulationParams]: string;
 }
 
-const defaultSimulationParams: SimulationParams = {
+export const defaultSimulationParams: SimulationParams = {
   nNodes: 100,
   nMeasurements: 10,
   nEpochs: 25,
@@ -34,17 +35,32 @@ const defaultSimulationParams: SimulationParams = {
 interface SimulationFormProps {
   runSimulation: (params: SimulationParams) => void;
   compilerParams: CompilerParams;
-  initialParams?: SimulationParams;
 }
 
 const SimulationForm: React.FC<SimulationFormProps> = ({
   runSimulation,
   compilerParams,
 }) => {
+  // get simulation parameters from URL
+  // const [searchParams, setSearchParams] = useSearchParams();
+
+  // const loadURLParams = () => {
+  //   const params = Object.fromEntries(searchParams.entries());
+  //   return params as any as Partial<SimulationParamFields>;
+  // };
+
+  // const combineParams = (): SimulationParamFields => ({ ...defaultSimulationParams as any, nMeasurements: compilerParams.n_measurements, ...loadURLParams() })
+
+  // set up the form including URL params if present 
   const { control, handleSubmit, watch } = useForm<SimulationParams>({
     // Compiler parameters cannot be changed in the form.
-    defaultValues: { ...defaultSimulationParams, nMeasurements: compilerParams.n_measurements },
+    defaultValues: { ...defaultSimulationParams as any, nMeasurements: compilerParams.n_measurements },
   });
+
+  // run the simulation when the component loads
+  // useEffect(() => {
+  //   onSubmit({ ...defaultSimulationParams as any, nMeasurements: compilerParams.n_measurements });
+  // }, [null]);
 
   const [isSimulating, setIsSimulating] = useState(false);
 
@@ -53,6 +69,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
     // wait for a bit to let the button update
     await new Promise(resolve => setTimeout(resolve, 50));
 
+    // this will lock up the thread: TODO: background
     try {
       const parsedParams: SimulationParams = {
         nNodes: parseInt(params.nNodes),

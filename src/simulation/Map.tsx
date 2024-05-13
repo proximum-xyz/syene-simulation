@@ -5,7 +5,6 @@ import L from 'leaflet';
 import Ellipse, { EllipseProps } from './LeafletEllipse';
 import init, { simulate, get_compile_parameters, InitOutput } from 'rust-proximum-simulation';
 import { COLORS, CompilerParams, Simulation, SimulationParams } from '../types';
-import IntroModal from './IntroModal';
 import GeodesicLine from './GeodesicLine';
 import SimulationOverlay from './SimulationOverlay';
 import styled from 'styled-components';
@@ -36,22 +35,8 @@ const DarkModePopup = styled(Popup)`
   }
 `;
 
-const display = {
-  center: [38.839827, -82.746378],
-  radii: [80000, 50000],
-  tilt: 90,
-  options: {
-    color: '#ff7961',
-    fillColor: '#ff7961',
-    fillOpacity: 0.5,
-    opacity: 1,
-    weight: 2,
-  },
-};
-
 const Map = () => {
   const [simulation, setSimulation] = useState<Simulation>();
-  const [showIntroModal, setShowIntroModal] = useState(false);
 
   // initialize WASM
   const [wasm, setWasm] = useState<InitOutput>();
@@ -93,12 +78,6 @@ const Map = () => {
 
   }
 
-  const closeIntroModal = () => setShowIntroModal(false);
-
-  if (showIntroModal) {
-    return <IntroModal onClose={closeIntroModal} />;
-  }
-
   const nodeContent = (simulation && simulation.nodes.length > 0) ? simulation.nodes.map((node, i) => {
     // asserted H3 index
     const assertedPolygonBoundary = cellToBoundary(node.asserted_index);
@@ -118,9 +97,6 @@ const Map = () => {
         color: COLORS.blue
       }
     }
-
-    // console.log(`*** (${node.en_variance_semimajor_axis[0]}, ${node.en_variance_semimajor_axis[1]}) angle ${Math.atan2(node.en_variance_semimajor_axis[1], node.en_variance_semimajor_axis[1])} ogatan ${Math.atan(node.en_variance_semimajor_axis[1], node.en_variance_semimajor_axis[1])}`,);
-
 
     return (
       <React.Fragment key={i}>

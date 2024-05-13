@@ -1,5 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
+import { COLORS } from '../types';
+import { Link } from '../Link';
 
 const ModalWrapper = styled.div`
   position: fixed;
@@ -7,7 +9,7 @@ const ModalWrapper = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.3);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -27,6 +29,7 @@ const ModalContent = styled.div`
 
 const Title = styled.h2`
   margin-top: 0;
+  color: ${COLORS.green}
 `;
 
 const Description = styled.p`
@@ -35,7 +38,7 @@ const Description = styled.p`
 
 const CloseButton = styled.button`
   padding: 8px 16px;
-  background-color: #ff8c00;
+  background-color: ${COLORS.pink};
   color: white;
   border: none;
   border-radius: 4px;
@@ -50,26 +53,20 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ onClose }) => {
   return (
     <ModalWrapper>
       <ModalContent>
-        <Title>Proximum: Syene Testnet Sim</Title>
-        This app simulates the basics of the Proximum location network -- think GPS, but onchain.
-        <h3>How do I use it?</h3>
-        <p>Click on the map to drop a user there. Proximum estimates their location by pinging local nodes.</p>
+        <Title>Proximum Location Oracle</Title>
+        Simulate the location oracle provided by Proximum&#39;s Syene Testnet.
         <ul>
-          <li><strong>Blue dot</strong>: real locations</li>
-          <li><strong>Orange dot</strong>: estimated locations</li>
-          <li><strong>Gray lines</strong>: paths to nearby nodes</li>
+          <li>
+            <strong>Physical Parameters</strong> define the network of nodes providing location services.
+          </li>
+          <li>
+            <strong>Model Parameters</strong> define Proximum&apos;s internal location estimation algorithm.
+          </li>
         </ul>
+        <h4>Important: this is an early preview, not the final algorithm.</h4>
         <p>
-          Configure network parameters to see how they affect the accuracy of position estimates.
+          Check out the <Link href="https://proximum.xyz/proximum-lightpaper.pdf">Lightpaper</Link> or <Link href="https://github.com/proximum-xyz/syene-simulation">Github</Link> to learn more about the network. Submit a PR with a 10x improvement in simulation speed or location accuracy to get an interview.
         </p>
-        <ul>
-          <li>
-            <strong>Physical Parameters</strong> define the real network of nodes.
-          </li>
-          <li>
-            <strong>Model Parameters</strong> define Proximum&apos;s internal simplified network model.
-          </li>
-        </ul>
         <CloseButton onClick={onClose}>Start</CloseButton>
       </ModalContent>
     </ModalWrapper>

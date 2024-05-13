@@ -1,10 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { useSearchParams } from 'react-router-dom';
 import SimulationForm from './SimulationForm';
 import Stats from './Stats';
 import { CompilerParams, Simulation, SimulationParams } from '../types';
 import { InitOutput, get_compile_parameters } from 'rust-proximum-simulation';
+import IntroModal from './IntroModal';
+
+
+const HomeLink = styled.a`
+  display: inline-block;
+  height: 65px;
+  color: #ffffff !important;
+  text-decoration: none !important;
+  cursor: pointer;
+  font-size: 50px;
+  line-height: 50px;
+  margin-top: 0px;
+  border-radius: 4px;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    text-decoration-color: rgba(255, 255, 255, 0.8);
+  }
+`;
 
 const ToggleButton = styled.button`
   background-color: transparent;
@@ -62,32 +80,31 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
   runSimulation,
   simulation,
 }) => {
+
+  const [showIntroModal, setShowIntroModal] = useState(true);
   const [isFormCollapsed, setIsFormCollapsed] = useState(false);
   const [isStatsCollapsed, setIsStatsCollapsed] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
 
   // Get the compiler params once
   const [compilerParams, setCompilerParams] = useState<CompilerParams>();
 
+  // Save compiler params
   useEffect(() => {
     const paramString = get_compile_parameters();
     setCompilerParams(JSON.parse(paramString));
   }, []);
 
+  const home = <HomeLink href="https://proximum.xyz">ᚼ</HomeLink>
 
-  const handleSimulationRun = (params: SimulationParams) => {
-    setSearchParams(params as any);
-    runSimulation(params);
-  };
-
-  const loadSimulationParams = () => {
-    const params = Object.fromEntries(searchParams.entries());
-    return params as any as SimulationParams;
-  };
+  const intro = showIntroModal ? (
+    <OverlayWrapper>
+      <IntroModal onClose={() => { setShowIntroModal(false) }} />
+    </OverlayWrapper>
+  ) : null;
 
   const form = () => {
 
-    if (!compilerParams) return null;
+    if (!compilerParams || showIntroModal) return null;
 
     return (
       <Column>
@@ -98,9 +115,8 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
           !isFormCollapsed && (
             <>
               <SimulationForm
-                runSimulation={handleSimulationRun}
+                runSimulation={runSimulation}
                 compilerParams={compilerParams}
-                initialParams={loadSimulationParams()}
               />
             </>
           )
@@ -124,6 +140,8 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
 
   return (
     <OverlayWrapper>
+      {home}
+      {intro}
       {form()}
       {stats()}
     </OverlayWrapper >

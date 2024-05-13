@@ -13,7 +13,7 @@ export enum COLORS {
 }
 
 export interface CompilerParams {
-  n_measurements: number;
+  n_measurements: string;
 }
 
 export interface Node {
