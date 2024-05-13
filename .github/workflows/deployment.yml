@@ -32,9 +32,11 @@ jobs:
         run: |
           rustup update
           rustup target add wasm32-unknown-unknown
-          cargo install wasm-pack
-          cd rust-proximum-simulation && cargo build
-
+      
+      - name: Install wasm-pack
+        run: |
+          npm install -g wasm-pack
+          
       - name: Compile Rust to WASM
         run: npm run compile-wasm
 
