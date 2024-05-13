@@ -8,7 +8,6 @@ on:
 env:
   AWS_REGION: us-east-1
   AWS_BUCKET: syene.proximum.xyz
-  CLOUDFRONT_DISTRIBUTION_ID: E2HUW0CWB1JIGH
 
 jobs:
   deploy:
@@ -60,4 +59,4 @@ jobs:
 
       - name: Create CloudFront invalidation
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
