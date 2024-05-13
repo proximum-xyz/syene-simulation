@@ -8,7 +8,7 @@ on:
 env:
   AWS_REGION: us-east-1
   AWS_BUCKET: syene.proximum.xyz
-  CLOUDFRONT_DISTRIBUTION_ID: a1234
+  CLOUDFRONT_DISTRIBUTION_ID: E2HUW0CWB1JIGH
 
 jobs:
   deploy:
