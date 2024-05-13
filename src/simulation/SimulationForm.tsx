@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CompilerParams, SimulationParams } from '../types';
-import { SectionHeader1, SectionHeader2, FormWrapper, FormField, Button, ProgressIndicator } from './SimulationFormComponents';
-import styled from 'styled-components';
-import { useSearchParams } from 'react-router-dom';
+import { SectionHeader1, FormWrapper, FormField, Button, ProgressIndicator } from './SimulationFormComponents';
 
 type SimulationParamFields = {
   [k in keyof SimulationParams]: string;

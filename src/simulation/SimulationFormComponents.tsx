@@ -1,11 +1,9 @@
 
 import React, { useState } from 'react';
-import { time } from 'console';
-import { parse } from 'path';
-import { Simulation, SimulationParams } from '../types';
+import { SimulationParams } from '../types';
 import styled from 'styled-components';
 import Slider from 'rc-slider';
-import { useForm, Controller, set, Control, UseFormWatch } from 'react-hook-form';
+import { Controller, Control, UseFormWatch } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 import 'rc-slider/assets/index.css';
 

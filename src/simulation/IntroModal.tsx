@@ -32,10 +32,6 @@ const Title = styled.h2`
   color: ${COLORS.green}
 `;
 
-const Description = styled.p`
-  margin-bottom: 20px;
-`;
-
 const CloseButton = styled.button`
   padding: 8px 16px;
   background-color: ${COLORS.pink};

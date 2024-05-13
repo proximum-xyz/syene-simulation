@@ -3,12 +3,11 @@ import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Popup, Polygon
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import Ellipse, { EllipseProps } from './LeafletEllipse';
-import init, { simulate, get_compile_parameters, InitOutput } from 'rust-proximum-simulation';
-import { COLORS, CompilerParams, Simulation, SimulationParams } from '../types';
-import GeodesicLine from './GeodesicLine';
+import init, { simulate, InitOutput } from 'rust-proximum-simulation';
+import { COLORS, Simulation, SimulationParams } from '../types';
 import SimulationOverlay from './SimulationOverlay';
 import styled from 'styled-components';
-import { CoordPair, cellToBoundary } from 'h3-js';
+import { cellToBoundary } from 'h3-js';
 
 function rad2deg(radians: number) {
   return radians * 180 / Math.PI;
@@ -81,7 +80,6 @@ const Map = () => {
   const nodeContent = (simulation && simulation.nodes.length > 0) ? simulation.nodes.map((node, i) => {
     // asserted H3 index
     const assertedPolygonBoundary = cellToBoundary(node.asserted_index);
-    const estimatedPolygonBoundary = cellToBoundary(node.estimated_index);
     const trueLatLngDeg = [node.true_wgs84.latitude, node.true_wgs84.longitude].map(rad2deg) as [number, number];
     const assertedLatLngDeg = [node.asserted_wgs84.latitude, node.asserted_wgs84.longitude].map(rad2deg) as [number, number];
     const estLatLngDeg = [node.estimated_wgs84.latitude, node.estimated_wgs84.longitude].map(rad2deg) as [number, number];

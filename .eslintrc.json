@@ -17,7 +17,8 @@
     "react"
   ],
   "rules": {
-    // Add any additional ESLint rules you want to enforce
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-non-null-assertion": "off"
   },
   "settings": {
     "react": {

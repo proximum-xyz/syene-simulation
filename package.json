@@ -4,6 +4,7 @@
   "license": "MIT",
   "private": true,
   "dependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@react-three/drei": "^9.105.4",
     "@react-three/fiber": "^8.16.2",
     "@testing-library/jest-dom": "^5.17.0",
@@ -32,7 +33,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "lint": "eslint './src/**/*.{js,jsx,ts,tsx}'; exit 0",
+    "lint": "eslint './src/**/*.{js,jsx,ts,tsx}'",
     "lint:fix": "eslint './src/**/*.{js,jsx,ts,tsx}' --fix",
     "compile-wasm": "cd rust-proximum-simulation && wasm-pack build --target web --out-dir pkg --debug"
   },

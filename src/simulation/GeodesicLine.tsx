@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMap, Polyline } from 'react-leaflet'
+import { Polyline } from 'react-leaflet'
 import { GeodesicLine as LeafletGeodesicLine } from 'leaflet.geodesic'
 import { LatLngExpression } from 'leaflet'
 
