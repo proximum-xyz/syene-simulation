@@ -10,6 +10,10 @@ This repo includes two components.
 * Rust simulation (compiled to WASM)
 
 The interesting stuff all happens in Rust:
+* Nodes are randomly positioned around the Earth
+* We simulate trustless time-of-flight distance measurements between these nodes
+* Each node updates its estimated position using an Extended Kalman Filter based on a measurement model of these messages.
+* See the [Proximum Lightpaper](https://proximum.xyz/proximum-lightpaper.pdf) for more background information
 
 ## Development
 * Install npm: ``
