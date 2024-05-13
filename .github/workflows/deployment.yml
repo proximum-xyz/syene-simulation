@@ -30,8 +30,10 @@ jobs:
 
       - name: Install Rust toolchain
         run: |
+          rustup update
           rustup target add wasm32-unknown-unknown
           cargo install wasm-pack
+          cargo build
 
       - name: Compile Rust to WASM
         run: npm run compile-wasm
