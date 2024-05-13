@@ -13,10 +13,11 @@ The interesting stuff all happens in Rust:
 * Nodes are randomly positioned around the Earth
 * We simulate trustless time-of-flight distance measurements between these nodes
 * Each node updates its estimated position using an [Extended Kalman Filter](https://en.wikipedia.org/wiki/Extended_Kalman_filter) based on a measurement model of these messages.
-* See the [Proximum Lightpaper](https://proximum.xyz/proximum-lightpaper.pdf) for more background information
+
+See the [Proximum Lightpaper](https://proximum.xyz/proximum-lightpaper.pdf) for more background information.
 
 ## Development
-* Install npm: `https://docs.npmjs.com/downloading-and-installing-node-js-and-npm`
+* Install [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 * Install JS dependencies: `npm install`
 * install [Rust](https://www.rust-lang.org/tools/install) and [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) 
 * Install Rust dependencies and compile the Rust to WASM: `npm run compile-wasm`
