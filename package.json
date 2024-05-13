@@ -1,6 +1,7 @@
 {
   "name": "proximum-simulation-web",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "dependencies": {
     "@react-three/drei": "^9.105.4",
