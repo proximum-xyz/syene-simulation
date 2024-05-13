@@ -32,11 +32,14 @@ jobs:
         run: |
           rustup target add wasm32-unknown-unknown
 
-      - name: Build the project
-        run: npm run build
+      - name: Compile Rust to WASM
+        run: npm run compile-wasm
 
       - name: Install dependencies (including Rust dependencies)
         run: npm install
+
+      - name: Build the project
+        run: npm run build
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
