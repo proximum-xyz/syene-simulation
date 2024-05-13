@@ -26,7 +26,7 @@ log = { version = "0.4.21" }
 console_log = "1.0.0"
 typenum = "1.17.0"
 rand_distr = "0.4.3"
-wasm-pack = "0.12.1"
+# wasm-pack = "0.12.1"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
