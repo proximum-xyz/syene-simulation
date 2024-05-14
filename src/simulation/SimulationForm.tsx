@@ -8,35 +8,67 @@ type SimulationParamFields = {
 }
 
 export const defaultSimulationParams: SimulationParams = {
-  nNodes: 100,
+  nNodes: 2,
   nMeasurements: 10,
-  nEpochs: 25,
+  nEpochs: 1,
   h3Resolution: 7,
   // km
   assertedPositionStddev: 100,
   // %c
-  beta: [0.5, 0.7],
+  beta: [0.9, 0.9],
   // %c
-  betaStddev: 0.1,
+  betaStddev: 0.01,
   // µs
-  tau: [5000, 10000],
+  tau: [0, 0],
   // µs
-  tauStddev: 10000,
+  tauStddev: 0.01,
   // km
-  messageDistanceMax: 5_000.0,
+  messageDistanceMax: 13_000.0,
   // km
-  modelPositionStddev: 10,
+  modelPositionStddev: 1,
   // %c
-  modelBeta: 0.5,
+  modelBeta: 0.9,
   // %c
-  modelBetaStddev: 0.2,
+  modelBetaStddev: 0.01,
   // µs
-  modelTau: 10000,
+  modelTau: 1000,
   // µs
-  modelTauStddev: 5000,
+  modelTauStddev: 1000,
   // µs
-  modelTofObservationStddev: 1000
+  modelTofObservationStddev: 1
 };
+
+
+// export const defaultSimulationParams: SimulationParams = {
+//   nNodes: 2,
+//   nMeasurements: 10,
+//   nEpochs: 1,
+//   h3Resolution: 7,
+//   // km
+//   assertedPositionStddev: 100,
+//   // %c
+//   beta: [0.5, 0.7],
+//   // %c
+//   betaStddev: 0.1,
+//   // µs
+//   tau: [5000, 10000],
+//   // µs
+//   tauStddev: 10000,
+//   // km
+//   messageDistanceMax: 5_000.0,
+//   // km
+//   modelPositionStddev: 100,
+//   // %c
+//   modelBeta: 0.5,
+//   // %c
+//   modelBetaStddev: 0.2,
+//   // µs
+//   modelTau: 10000,
+//   // µs
+//   modelTauStddev: 5000,
+//   // µs
+//   modelTofObservationStddev: 1000
+// };
 
 interface SimulationFormProps {
   runSimulation: (params: SimulationParams) => void;
@@ -115,9 +147,9 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
         <SectionHeader1>Physical Parameters</SectionHeader1>
         <FormField name='assertedPositionStddev' control={control} watch={watch} options={{ min: 0, max: 13000 }} />
         <FormField name='beta' control={control} watch={watch} options={{ min: 0, max: 1, step: 0.01, slider: true }} />
-        <FormField name='betaStddev' control={control} watch={watch} options={{ min: 0, max: 0.5 }} />
+        <FormField name='betaStddev' control={control} watch={watch} options={{ min: 0.01, max: 1, step: 0.01 }} />
         <FormField name='tau' control={control} watch={watch} options={{ min: 0, max: 30000, slider: true }} />
-        <FormField name='tauStddev' control={control} watch={watch} options={{ min: 0, max: 10000 }} />
+        <FormField name='tauStddev' control={control} watch={watch} options={{ min: 0.01, max: 10000, step: 0.01 }} />
         <FormField name='messageDistanceMax' control={control} watch={watch} options={{ min: 10, max: 13000 }} />
 
         <SectionHeader1>Model Parameters</SectionHeader1>

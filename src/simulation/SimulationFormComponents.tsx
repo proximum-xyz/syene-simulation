@@ -81,7 +81,7 @@ const Label = styled.label`
 
 const ReadOnlyValue = styled.div`
   padding: 4px 8px;
-  background-color: #333333;
+  background-color: #222222;
   border-radius: 4px;
   color: #ffffff;
   cursor: default !important;
@@ -120,7 +120,7 @@ const SliderInput = styled.input`
 
 const HelpTextPopup = styled.div`
   position: fixed;
-  top: 50%;
+  top: 45%;
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: #1f1f1f;
@@ -128,23 +128,24 @@ const HelpTextPopup = styled.div`
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   color: #ffffff;
-  max-width: 400px;
+  max-width: 600px;
   width: 100%;
   box-sizing: border-box;
 `;
 
-const HelpTextTitle = styled.h4`
+const HelpTextTitle = styled.h2`
   margin-top: 0;
   color: #00ff9f;
 `;
 
 const HelpTextContent = styled.div`
   margin-bottom: 0;
+  font-size:1rem;
 `;
 
 const CloseButton = styled.button`
   padding: 6px 12px;
-  background-color: #ff4081;
+  background-color: ${COLORS.pink};
   color: white;
   border: none;
   border-radius: 4px;
@@ -192,7 +193,7 @@ const titleTexts: FormDescriptor = {
   beta: 'Mean Message Speed Range (c)',
   betaStddev: 'Message Speed Std. Dev.',
   tau: 'Mean Latency Range (µs)',
-  tauStddev: "Latency St. Dev. (µs)",
+  tauStddev: "Latency Std. Dev. (µs)",
   messageDistanceMax: 'Message Range (km)',
   modelPositionStddev: 'Estimator State Std. Dev. (km)',
   modelBeta: 'Model Message Speed (% c)',
@@ -250,7 +251,9 @@ const helpTexts: FormDescriptor = {
   As the Proximum network matures, ASICs using EM communication channels may push average message speeds toward the upper bound of 1c. Proximum estimates the message speed for each node (see the *Model Message Speed* parameter). The lower bound on permitted message speed may increase over time to incentivize nodes to improve message speed and position resolution.
   `,
   betaStddev: `
-  Each message travels at a slightly different speed depending on routing, etc. This simulation adds noise drawn from the normal distribution to a node's mean message speed when making each distance measurement. Note that the final message speed for each message is always bounded to the range (0c, 1c).
+  Each message travels at a slightly different speed depending on routing, etc. This simulation adds noise drawn from the normal distribution to a node's mean message speed when making each distance measurement.
+  
+  Note that the final message speed for each message is always bounded to the range (0c, 1c).
   `,
   tau: `
   Nodes have an internal latency: it takes them time to process and respond to messages after they receive the message. This simulation assumes each node has a fixed mean latency drawn from a uniform distribution over the specified range.
@@ -259,7 +262,9 @@ const helpTexts: FormDescriptor = {
   * General IP networks: 20,000-40,000 µs
   * High frequency trading: 1-10 µs
   
-  Proximum estimates the mean latency for each node.  As the Proximum network matures, ASICs may push latencies toward a lower bound of ~1 µs. Permitted latency may drop over time to incentivize nodes to improve latency and position resolution.
+  Proximum estimates the mean latency for each node.
+  
+  As the Proximum network matures, ASICs may push latencies toward a lower bound of ~1 µs. Permitted latency may drop over time to incentivize nodes to improve latency and position resolution.
   `,
   tauStddev: `
   The time it takes for a node to respond to a given message varies slightly depending on processor load, etc. This simulation adds noise drawn from the lognormal distribution to a node's mean latency when making each distance measurement.
@@ -330,7 +335,7 @@ export const FormField = ({
   const [showHelp, setShowHelp] = useState<boolean>(false);
 
   const numericController = () => (
-    options.readonly ? <ReadOnlyValue>{name}</ReadOnlyValue>
+    options.readonly ? <ReadOnlyValue>{watch(name)}</ReadOnlyValue>
       :
       <Controller
         name={name}

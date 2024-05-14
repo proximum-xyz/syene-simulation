@@ -117,7 +117,7 @@ impl NonlinearObservationModel {
         for i in 0..OS::dim() {
             let their_state = nodes[their_indices[i]].state_and_covariance.state();
             their_node_states
-                .view_mut((0, i), (3, 1))
+                .view_mut((0, i), (5, 1))
                 .copy_from(their_state);
         }
 

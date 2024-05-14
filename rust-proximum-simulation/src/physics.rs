@@ -35,10 +35,11 @@ pub fn simulate_ping_pong_tof(
     // ensure the speed is between 0 c and 1 c
     let mut beta_1 = beta_1_noise_dist.sample(&mut rng);
     while beta_1 <= 0.0 || beta_1 >= 1.0 {
-        beta_1 = n1.channel_speed + beta_1_noise_dist.sample(&mut rng);
+        trace!("beta 1 out of range");
+        beta_1 = beta_1_noise_dist.sample(&mut rng);
     }
 
-    let tau_1 = n1.latency + tau_1_noise_dist.sample(&mut rng);
+    let tau_1 = tau_1_noise_dist.sample(&mut rng);
 
     let beta_2_noise_dist = Normal::new(n2.channel_speed, beta_variance.powf(0.5))
         .expect("could not create normal distribution");
@@ -47,10 +48,11 @@ pub fn simulate_ping_pong_tof(
 
     let mut beta_2 = beta_2_noise_dist.sample(&mut rng);
     while beta_2 <= 0.0 || beta_2 >= 1.0 {
-        beta_2 = n1.channel_speed + beta_2_noise_dist.sample(&mut rng);
+        trace!("beta 2 out of range");
+        beta_2 = beta_2_noise_dist.sample(&mut rng);
     }
 
-    let tau_2 = n2.latency + tau_2_noise_dist.sample(&mut rng);
+    let tau_2 = tau_2_noise_dist.sample(&mut rng);
 
     // Calculate the time taken for the ping
     let ping_time = true_distance / (C * beta_1) + tau_1;
