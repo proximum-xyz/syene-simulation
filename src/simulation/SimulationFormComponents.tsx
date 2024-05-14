@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { SimulationParams } from '../types';
+import { COLORS, SimulationParams } from '../types';
 import styled from 'styled-components';
 import Slider from 'rc-slider';
 import { Controller, Control, UseFormWatch } from 'react-hook-form';
@@ -41,7 +41,7 @@ export const FormWrapper = styled.div`
 
 export const Button = styled.button`
   padding: 6px 12px;
-  background-color: #ff4081;
+  background-color: ${COLORS.pink};
   color: white;
   border: none;
   border-radius: 4px;

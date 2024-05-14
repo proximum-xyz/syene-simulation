@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Label,
 } from 'recharts';
-import { Simulation } from '../types';
+import { COLORS, Simulation } from '../types';
 import styled from 'styled-components';
 
 export interface SimulationStats {
@@ -66,15 +66,14 @@ const Stats = ({ stats }: { stats: Simulation['stats'] }) => {
             stroke="#00b8ff"
             name="Estimation"
             dot={{ fill: '#333' }}
-            activeDot={{ fill: '#00b8ff', stroke: '#00b8ff', strokeWidth: 2, r: 6 }}
+          // activeDot={{ fill: '#00b8ff', stroke: '#00b8ff', strokeWidth: 2, r: 6 }}
           />
           <Line
             type="monotone"
             dataKey="assertionStddev"
-            stroke="#8b00ff"
+            stroke={COLORS.pink}
             name="Assertion"
-            dot={{ fill: '#333' }}
-            activeDot={{ fill: '#8b00ff', stroke: '#8b00ff', strokeWidth: 2, r: 6 }}
+            dot={{ fill: '#00000000', radius: 0, stroke: "#00000000" }}
           />
         </LineChart>
       </ResponsiveContainer>

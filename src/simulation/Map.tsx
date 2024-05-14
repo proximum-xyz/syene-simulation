@@ -13,6 +13,10 @@ function rad2deg(radians: number) {
   return radians * 180 / Math.PI;
 }
 
+function distanceKm(a: [number, number, number], b: [number, number, number]) {
+  return (Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2) / 1000).toFixed(1);
+}
+
 const DarkModePopup = styled(Popup)`
   .leaflet-popup-content-wrapper {
     background-color: #1f1f1f;
@@ -99,21 +103,23 @@ const Map = () => {
     return (
       <React.Fragment key={i}>
         {/* H3 tilse */}
-        <Polygon positions={assertedPolygonBoundary} color={COLORS.purple} fillColor={COLORS.purple} fillOpacity={0.2} weight={1}>
+        <Polygon positions={assertedPolygonBoundary} color={COLORS.pink} fillColor={COLORS.pink} fillOpacity={0.2} weight={1}>
           <DarkModePopup>Node {i}: asserted H3 polygon {node.asserted_index}</DarkModePopup>
         </Polygon>
 
         <Polyline positions={[assertedLatLngDeg, trueLatLngDeg, estLatLngDeg]} color={COLORS.green} weight={1} />
         {/* {i > 0 && <GeodesicLine points={[node0TrueLatLngDeg, trueLatLngDeg]} options={{ color: "gray", opacity: 0.5 }} />} */}
-        <CircleMarker center={estLatLngDeg} color={COLORS.blue} fill fillColor={COLORS.blue} radius={3} />
-        <CircleMarker center={assertedLatLngDeg} color={COLORS.purple} fill fillColor={COLORS.purple} radius={3}>
-          <DarkModePopup>Node {i}: asserted position</DarkModePopup>
+        <CircleMarker center={estLatLngDeg} color={COLORS.blue} fill fillColor={COLORS.blue} radius={3}>
+          <DarkModePopup><p>Node {i} estimated position</p>Error: {distanceKm(node.true_position, node.estimated_position)} km</DarkModePopup>
+        </CircleMarker>
+        <CircleMarker center={assertedLatLngDeg} color={COLORS.pink} fill fillColor={COLORS.pink} radius={3}>
+          <DarkModePopup><p>Node {i} asserted position</p>Error: {distanceKm(node.true_position, node.asserted_position)} km</DarkModePopup>
         </CircleMarker>
 
         {/* 1 standard deviation location confidence ellipse */}
 
         <Ellipse {...ellipseConfig}>
-          <DarkModePopup>Node {i}: estimated position and 1σ uncertainty ellipse</DarkModePopup>
+          <DarkModePopup><p>Node {i} estimated position and 1σ uncertainty ellipse</p>Error: {distanceKm(node.true_position, node.asserted_position)} km</DarkModePopup>
         </Ellipse>
 
         {/* <CircleMarker center={trueLatLngDeg} color={COLORS.green} fill fillColor={COLORS.green} radius={4} /> */}
@@ -137,7 +143,7 @@ const Map = () => {
       <MapContainer center={[0, 0]} zoom={3} zoomControl={false} style={{ position: 'absolute', top: 0, left: 0, height: '100vh', width: '100%' }}>
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+          // attribution="&copy; OpenStreetMap contributors &copy; CARTO"
           subdomains='abcd'
           minZoom={1}
           maxZoom={20}
