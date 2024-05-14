@@ -8,7 +8,7 @@ export enum COLORS {
   green = "#00ff9f",
   blue = "#00b8ff",
   orange = "#ff8c00",
-  pink = "#ff4081",
+  pink = "#ff0060",
   purple = "#8b00ff"
 }
 
