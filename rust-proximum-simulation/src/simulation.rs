@@ -43,10 +43,16 @@ impl Node {
         asserted_index: CellIndex,
         channel_speed: f64,
         latency: f64,
-        model_state_variance: f64,
+        model_position_variance: f64,
+        model_beta_variance: f64,
+        model_tau_variance: f64,
     ) -> Self {
         let true_position = h3_to_ecef(true_index);
         let asserted_position = h3_to_ecef(asserted_index);
+
+        let mut covariance = OMatrix::<f64, SS, SS>::identity() * model_position_variance;
+        covariance[(3, 3)] = model_beta_variance;
+        covariance[(4, 4)] = model_tau_variance;
 
         Node {
             id,
@@ -68,13 +74,15 @@ impl Node {
             channel_speed,
             latency,
             state_and_covariance: StateAndCovariance::new(
-                // dummy state for now
+                // start with the asserted position and generic channel speed & latency parameters as a reasonable guess
                 OVector::<f64, SS>::new(
                     asserted_position.x(),
                     asserted_position.y(),
                     asserted_position.z(),
+                    channel_speed,
+                    latency,
                 ),
-                OMatrix::<f64, SS, SS>::identity() * model_state_variance,
+                covariance,
             ),
         }
     }
@@ -112,16 +120,20 @@ impl Simulation {
         n_nodes: usize,
         n_epochs: usize,
         h3_resolution: i32,
-        real_asserted_position_variance: f64,
-        real_channel_speed_min: f64,
-        real_channel_speed_max: f64,
-        real_latency_min: f64,
-        real_latency_max: f64,
-        model_distance_max: f64,
-        model_state_variance: f64,
-        model_measurement_variance: f64,
-        model_signal_speed_fraction: f64,
-        model_node_latency: f64,
+        asserted_position_variance: f64,
+        beta_min: f64,
+        beta_max: f64,
+        beta_variance: f64,
+        tau_min: f64,
+        tau_max: f64,
+        tau_variance: f64,
+        message_distance_max: f64,
+        model_position_variance: f64,
+        model_beta: f64,
+        model_beta_variance: f64,
+        model_tau: f64,
+        model_tau_variance: f64,
+        model_tof_observation_variance: f64,
     ) -> Self {
         let mut nodes: Vec<Node> = Vec::new();
         let resolution = Resolution::try_from(h3_resolution).expect("invalid H3 resolution");
@@ -132,15 +144,17 @@ impl Simulation {
 
             // generate a random asserted position drawn from a gaussian distribution around the real position
             let asserted_index =
-                normal_neighbor_index(true_index, real_asserted_position_variance, resolution);
+                normal_neighbor_index(true_index, asserted_position_variance, resolution);
 
             let node = Node::new(
                 nodes.len(),
                 true_index,
                 asserted_index,
-                rand::thread_rng().gen_range(real_channel_speed_min..=real_channel_speed_max),
-                rand::thread_rng().gen_range(real_latency_min..=real_latency_max),
-                model_state_variance,
+                rand::thread_rng().gen_range(beta_min..=beta_max),
+                rand::thread_rng().gen_range(tau_min..=tau_max),
+                model_position_variance,
+                model_beta_variance,
+                model_tau_variance,
             );
             nodes.push(node);
         }
@@ -149,16 +163,20 @@ impl Simulation {
             n_nodes,
             n_epochs,
             h3_resolution,
-            real_asserted_position_variance,
-            real_channel_speed_min,
-            real_channel_speed_max,
-            real_latency_min,
-            real_latency_max,
-            model_distance_max,
-            model_state_variance,
-            model_measurement_variance,
-            model_signal_speed_fraction,
-            model_node_latency,
+            asserted_position_variance,
+            beta_min,
+            beta_max,
+            beta_variance,
+            tau_min,
+            tau_max,
+            tau_variance,
+            message_distance_max,
+            model_position_variance,
+            model_beta,
+            model_beta_variance,
+            model_tau,
+            model_tau_variance,
+            model_tof_observation_variance,
             nodes,
             stats: Stats {
                 estimation_rms_error: Vec::new(),
@@ -174,20 +192,22 @@ impl Simulation {
         observation_model_generator: &NonlinearObservationModel,
         state_model: &StationaryStateModel<f64>,
     ) {
-        let (indices, distances) = generate_measurements(
+        let (indices, times) = generate_measurements(
             node_index,
             &self.nodes,
             N_MEASUREMENTS,
-            self.model_distance_max,
-            self.model_signal_speed_fraction,
-            self.model_node_latency,
+            self.message_distance_max,
+            self.beta_variance,
+            self.tau_variance,
+            self.model_beta,
+            self.model_tau,
         );
 
         let observation_model = observation_model_generator.linearize_at(
             &self.nodes,
             node_index,
             indices,
-            self.model_measurement_variance,
+            self.model_tof_observation_variance,
         );
 
         trace!("built observation model");
@@ -201,7 +221,7 @@ impl Simulation {
         trace!("state before: {:#?}", node.state_and_covariance);
 
         node.state_and_covariance = kf
-            .step(&node.state_and_covariance, &distances)
+            .step(&node.state_and_covariance, &times)
             .expect("bad kalman filter step");
 
         trace!("state after: {:#?}", node.state_and_covariance);
@@ -216,7 +236,7 @@ impl Simulation {
         info!("Running simulation: for {} epochs!", self.n_epochs);
 
         // Set up the initial state of the Kalman filter for each node. Note that all nodes follow the same state and observation models!
-        let state_model = StationaryStateModel::new(self.model_state_variance);
+        let state_model = StationaryStateModel::new(self.model_position_variance);
         let observation_model_generator = NonlinearObservationModel::new();
 
         let mut rng = thread_rng();

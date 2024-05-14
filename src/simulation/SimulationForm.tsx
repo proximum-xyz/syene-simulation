@@ -13,21 +13,29 @@ export const defaultSimulationParams: SimulationParams = {
   nEpochs: 25,
   h3Resolution: 7,
   // km
-  realAssertedPositionStddev: 100,
-  // c
-  realChannelSpeed: [0.5, 0.7],
+  assertedPositionStddev: 100,
+  // %c
+  beta: [0.5, 0.7],
+  // %c
+  betaStddev: 0.1,
   // µs
-  realLatency: [5000, 10000],
-  // km
-  modelDistanceMax: 5_000.0,
-  // km
-  modelStateStddev: 10,
-  // km
-  modelMeasurementStddev: 1000,
-  // c
-  modelSignalSpeedFraction: 0.6,
+  tau: [5000, 10000],
   // µs
-  modelNodeLatency: 15000,
+  tauStddev: 10000,
+  // km
+  messageDistanceMax: 5_000.0,
+  // km
+  modelPositionStddev: 10,
+  // %c
+  modelBeta: 0.5,
+  // %c
+  modelBetaStddev: 0.2,
+  // µs
+  modelTau: 10000,
+  // µs
+  modelTauStddev: 5000,
+  // µs
+  modelTofObservationStddev: 1000
 };
 
 interface SimulationFormProps {
@@ -74,14 +82,18 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
         nMeasurements: parseInt(params.nMeasurements),
         nEpochs: parseInt(params.nEpochs),
         h3Resolution: parseInt(params.h3Resolution),
-        realAssertedPositionStddev: parseFloat(params.realAssertedPositionStddev),
-        realChannelSpeed: (params.realChannelSpeed as any as string[]).map(parseFloat) as [number, number],
-        realLatency: (params.realLatency as any as string[]).map(parseFloat) as [number, number],
-        modelDistanceMax: parseFloat(params.modelDistanceMax),
-        modelStateStddev: parseFloat(params.modelStateStddev),
-        modelMeasurementStddev: parseFloat(params.modelMeasurementStddev),
-        modelSignalSpeedFraction: parseFloat(params.modelSignalSpeedFraction),
-        modelNodeLatency: parseFloat(params.modelNodeLatency),
+        assertedPositionStddev: parseFloat(params.assertedPositionStddev),
+        beta: (params.beta as any as string[]).map(parseFloat) as [number, number],
+        betaStddev: parseFloat(params.betaStddev),
+        tau: (params.tau as any as string[]).map(parseFloat) as [number, number],
+        tauStddev: parseFloat(params.tauStddev),
+        messageDistanceMax: parseFloat(params.messageDistanceMax),
+        modelPositionStddev: parseFloat(params.modelPositionStddev),
+        modelBeta: parseFloat(params.modelBeta),
+        modelBetaStddev: parseFloat(params.modelBetaStddev),
+        modelTau: parseFloat(params.modelTau),
+        modelTauStddev: parseFloat(params.modelTauStddev),
+        modelTofObservationStddev: parseFloat(params.modelTofObservationStddev),
       };
       runSimulation(parsedParams);
     } catch (e) {
@@ -101,16 +113,20 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
         <FormField name='nMeasurements' control={control} watch={watch} options={{ readonly: true }} />
 
         <SectionHeader1>Physical Parameters</SectionHeader1>
-        <FormField name='realAssertedPositionStddev' control={control} watch={watch} options={{ min: 0, max: 13000 }} />
-        <FormField name='realChannelSpeed' control={control} watch={watch} options={{ min: 0, max: 1, step: 0.01, slider: true }} />
-        <FormField name='realLatency' control={control} watch={watch} options={{ min: 0, max: 30000, slider: true }} />
-        <FormField name='modelDistanceMax' control={control} watch={watch} options={{ min: 10, max: 13000 }} />
+        <FormField name='assertedPositionStddev' control={control} watch={watch} options={{ min: 0, max: 13000 }} />
+        <FormField name='beta' control={control} watch={watch} options={{ min: 0, max: 1, step: 0.01, slider: true }} />
+        <FormField name='betaStddev' control={control} watch={watch} options={{ min: 0, max: 0.5 }} />
+        <FormField name='tau' control={control} watch={watch} options={{ min: 0, max: 30000, slider: true }} />
+        <FormField name='tauStddev' control={control} watch={watch} options={{ min: 0, max: 10000 }} />
+        <FormField name='messageDistanceMax' control={control} watch={watch} options={{ min: 10, max: 13000 }} />
 
         <SectionHeader1>Model Parameters</SectionHeader1>
-        <FormField name='modelSignalSpeedFraction' control={control} watch={watch} options={{ min: 0, max: 1, step: 0.01 }} />
-        <FormField name='modelNodeLatency' control={control} watch={watch} options={{ min: 0, max: 30000 }} />
-        <FormField name='modelStateStddev' control={control} watch={watch} options={{ min: 0.0, step: 0.001 }} />
-        <FormField name='modelMeasurementStddev' control={control} watch={watch} options={{ min: 0.0, step: 0.001 }} />
+        <FormField name='modelPositionStddev' control={control} watch={watch} options={{ min: 0.0, step: 0.001 }} />
+        <FormField name='modelBeta' control={control} watch={watch} options={{ min: 0, max: 1, step: 0.01 }} />
+        <FormField name='modelBetaStddev' control={control} watch={watch} options={{ min: 0, max: 0.5, step: 0.01 }} />
+        <FormField name='modelTau' control={control} watch={watch} options={{ min: 0, max: 30000 }} />
+        <FormField name='modelTauStddev' control={control} watch={watch} options={{ min: 0, max: 10000 }} />
+        <FormField name='modelTofObservationStddev' control={control} watch={watch} options={{ min: 0.0, max: 10000, step: 1 }} />
 
         {isSimulating ? <ProgressIndicator /> : <Button type="submit" disabled={isSimulating}>Simulate</Button>}
 

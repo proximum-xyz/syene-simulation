@@ -186,16 +186,20 @@ const SliderInputWrapper = styled.div`
 const titleTexts: FormDescriptor = {
   nNodes: 'Nodes',
   nMeasurements: 'Measurements',
-  h3Resolution: 'H3 Resolution',
-  realAssertedPositionStddev: 'Asserted Position Std. Dev. (km)',
-  realChannelSpeed: 'Real Message Speed (c)',
-  realLatency: 'Real Latency (µs)',
-  modelDistanceMax: 'Message Range (km)',
-  modelStateStddev: 'Estimator State Std. Dev. (km)',
-  modelMeasurementStddev: 'Estimator Measurement Std. Dev. (km)',
-  modelSignalSpeedFraction: 'Estimator Message Speed (c)',
-  modelNodeLatency: 'Estimator Latency (c)',
   nEpochs: 'Epochs',
+  h3Resolution: 'H3 Resolution',
+  assertedPositionStddev: 'Asserted Position Std. Dev. (km)',
+  beta: 'Mean Message Speed Range (c)',
+  betaStddev: 'Message Speed Std. Dev.',
+  tau: 'Mean Latency Range (µs)',
+  tauStddev: "Latency St. Dev. (µs)",
+  messageDistanceMax: 'Message Range (km)',
+  modelPositionStddev: 'Estimator State Std. Dev. (km)',
+  modelBeta: 'Model Message Speed (% c)',
+  modelBetaStddev: 'Model Message Speed Std. Dev. (% c)',
+  modelTau: 'Model Latency (µs)',
+  modelTauStddev: 'Model Latency Std. Dev. (µs)',
+  modelTofObservationStddev: 'Model Time-of-Flight Std. Dev. (µs)',
 }
 
 const helpTexts: FormDescriptor = {
@@ -209,24 +213,31 @@ const helpTexts: FormDescriptor = {
   This parameter is set during compilation and cannot be changed here currently.
   `,
   nMeasurements: `
-  The number of distance measurements between node pairs used within each position estimation.
+  The number of distance measurements between node pairs used within each position estimation. For each measurement, one node pings another node and waits for a signed pong response. The response time puts an upper bound on the distance to the other node.
   
-  Increasing the number of measurements improves position accuracy and computational difficulty.
+  Increasing the number of measurements improves position accuracy (and computational difficulty).
 
-  This parameter is set during compilation and cannot be changed here currently.
+  This parameter is set during compilation and cannot be changed here.
+  `,
+  nEpochs: `
+  The number of times to estimate the position of each node in the simulation.
+  
+  Each epoch consists of a set of distance measurements defined by the *Measurements* parameter and a position estimation step. Increasing the number of epochs improves position accuracy but also increases computational difficulty.
+
+ Think of each epoch as a single block on the blockchain (although in practice they may not map 1:1).
   `,
   h3Resolution: `
   The resolution of the H3 grid used by nodes asserting a position. Explore H3 resolutions [here](https://wolf-h3-viewer.glitch.me/).
   `,
-  realAssertedPositionStddev: `
+  assertedPositionStddev: `
   Adversarial nodes can attempt to deceive the network by asserting a location other than their true position!
   
   We model this by assuming all asserted node positions are drawn from a normal distribution centered around the node's true position with a standard deviation in km specified by this parameter.
 
-  Can the Proximum network detect and penalize adversarial nodes? Run the simulation to find out!
+  Can the Proximum network detect adversarial nodes reporting false locations? Run the simulation to find out!
   `,
-  realChannelSpeed: `
-  Nodes send each other messages to measure distances. These messages propagate at different speeds depending on the communication medium. This simulation draws each message speed from a uniform distribution over the specified range.
+  beta: `
+  Nodes send each other messages to measure distances. These messages propagate at different speeds depending on the communication medium. This simulation assumes each node always uses a single communication channel and selects a fixed message speed for that node from a uniform distribution over the specified range.
   
   General message speeds (c = speed of light) are as follows:
   * General IP networks: ~0.1c
@@ -236,52 +247,59 @@ const helpTexts: FormDescriptor = {
   * microwave: 0.99c.
   * laser: 0.99c
   
-  As the Proximum network matures, ASICs using EM communication channels may push average message speeds toward the upper bound of 1c. Proximum models message speed as a constant value internally (see the *Model Message Speed* parameter). This value may increase over time to incentivize nodes to improve message speed and position resolution.
+  As the Proximum network matures, ASICs using EM communication channels may push average message speeds toward the upper bound of 1c. Proximum estimates the message speed for each node (see the *Model Message Speed* parameter). The lower bound on permitted message speed may increase over time to incentivize nodes to improve message speed and position resolution.
   `,
-  realLatency: `
-  Nodes take time to process and respond to messages beyond the raw message propagation time. This simulation draws node latency from a uniform distribution over the specified range.
+  betaStddev: `
+  Each message travels at a slightly different speed depending on routing, etc. This simulation adds noise drawn from the normal distribution to a node's mean message speed when making each distance measurement. Note that the final message speed for each message is always bounded to the range (0c, 1c).
+  `,
+  tau: `
+  Nodes have an internal latency: it takes them time to process and respond to messages after they receive the message. This simulation assumes each node has a fixed mean latency drawn from a uniform distribution over the specified range.
 
   Reference latencies:
   * General IP networks: 20,000-40,000 µs
   * High frequency trading: 1-10 µs
   
-  As the Proximum network matures, ASICs may push latencies toward a lower bound of ~1 µs. Proximum models latency as a constant value internally (see the *Latency* parameter) which may drop over time to incentivize nodes to improve latency and position resolution.
+  Proximum estimates the mean latency for each node.  As the Proximum network matures, ASICs may push latencies toward a lower bound of ~1 µs. Permitted latency may drop over time to incentivize nodes to improve latency and position resolution.
   `,
-  modelDistanceMax: `
-  Nodes can only reach other nodes within this range (e.g. because radio signals only travel so far). Set it to a value > 13,000 km to simulate all nodes being able to reach each other.
+  tauStddev: `
+  The time it takes for a node to respond to a given message varies slightly depending on processor load, etc. This simulation adds noise drawn from the lognormal distribution to a node's mean latency when making each distance measurement.
   `,
-  modelStateStddev: `
-  Proximum models all nodes as stationary but its confidence in the position of each node decreases over time (until new distance measurements are made). This parameter controls the rate at which the confidence decreases.
+  messageDistanceMax: `
+  Nodes can only reach other nodes within this range (e.g. because radio signals or other communication meethods only travel so far). Set it to a value > 13,000 km to simulate all nodes being able to reach each other.
+
+  In practice this value will likely be < ~1000km but the number of nodes will be > 1000 (this is just too slow to simulate easily).
+  `,
+  modelPositionStddev: `
+  Proximum estimates the position of each nodes. It models all nodes as stationary but its confidence in the location of each node decreases over time until new distance measurements are made. This parameter controls the rate at which the confidence decreases.
 
   This state noise standard deviation is added to the estimated state of the node positions within the Extended Kalman Filter at each epoch.  
   `,
-  modelMeasurementStddev: `
-  Proximum models distance measurements as noisy but unbiased.
-  
-  This parameter controls the amount of noise added to the true distance measurements: more noise means measurements are less reliable.
-
-  This measurement standard deviation is added to distance measurements within the Extended Kalman Filter measurement update.`,
-  modelSignalSpeedFraction: `
-  This parameter controls how Proximum will estimate the distance between nodes based on node response time.
+  modelBeta: `
+  Proximum estimates the mean message speed of each node based on time-of-flight distance measurements. This parameter sets Proximum's initial mean message speed estimate for each node.
 
   It should be a value within the range of the *Real Message Speed* parameter.
 
-  Proximum models message propagation speed within the network as a constant fraction of the speed of light when estimating distances within the Extended Kalman Filter.
+  The estimated mean message speed is used within the Extended Kalman Filter to refine the filter's location estimate for each node.
   `,
-  modelNodeLatency: `
-  This parameter controls how Proximum will estimate the distance between nodes based on node response time.
+  modelBetaStddev: `
+  Proximum's confidence in a node's mean message speed decreases over time until a new measurement is made. This parameter controls the rate at which its confidence decreases.
+  `,
+  modelTau: `
+  Proximum estimates the mean latency for each node based on time-of-flight distance measurements. This parameter set's Proximum's mean latency estimate for each  node.
   
-  It should be a value within the range of the *Real Latency* parameter.
+  It should be a value within the range of the *Latency* parameter.
 
-  Proximum models node latency as a constant value when estimating distances within the Extended Kalman Filter.
+  The estimated mean latency is used within the Extended Kalman Filter to refine the filter's location estimate for each node.
   `,
-  nEpochs: `
-  The number of times to estimate the position of each node in the simulation.
+  modelTauStddev: `
+  Proximum's confidence in a node's mean latency decreases over time until a new measurement is made. This parameter controls the rate at which its confidence decreases.
+  `,
+  modelTofObservationStddev: `
+  Proximum measures distance using time-of-flight measurements that take into account message speed and latency for each node.
   
-  Each epoch consists of a set of distance measurements defined by the *Measurements* parameter and a position estimation step. Increasing the number of epochs improves position accuracy but also increases computational difficulty.
+  This parameter controls the amount of additional unmodeled noise to expect for each time-of-flight measurement: more noise means measurements are less reliable.
 
- Think of each epoch as a single block on the blockchain (although in practice they may not map 1:1).
-  `,
+  This measurement standard deviation is added to distance measurements within the Extended Kalman Filter measurement update.`,
 };
 
 

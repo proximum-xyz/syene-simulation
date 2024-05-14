@@ -55,23 +55,34 @@ const Map = () => {
       simulationParams.nNodes,
       simulationParams.nEpochs,
       simulationParams.h3Resolution,
-      // convert km stddev to meters^2 variance
-      (simulationParams.realAssertedPositionStddev * 1000) ** 2,
-      simulationParams.realChannelSpeed[0],
-      simulationParams.realChannelSpeed[1],
-      // convert µs to seconds
-      simulationParams.realLatency[0] * 1e-6,
-      // convert µs to seconds
-      simulationParams.realLatency[1] * 1e-6,
+      // accuracy of position assertions: convert km stddev to meters^2 variance
+      (simulationParams.assertedPositionStddev * 1000) ** 2,
+      // min message speed as a fraction of the speed of light
+      simulationParams.beta[0],
+      // max message speed as a fraction of the speed of light
+      simulationParams.beta[1],
+      // message speed per-message variance: convert std dev to variance
+      simulationParams.betaStddev ** 2,
+      // min node latency: convert µs to seconds
+      simulationParams.tau[0] * 1e-6,
+      // max node latency: convert µs to seconds
+      simulationParams.tau[1] * 1e-6,
+      // latency per-measurement variance: convert std dev to variance
+      simulationParams.tauStddev ** 2,
       // convert km to meters
-      simulationParams.modelDistanceMax * 1000,
-      // convert km stddev to meters variance
-      (simulationParams.modelStateStddev * 1000) ** 2,
-      // convert km stddev to meters variance
-      (simulationParams.modelMeasurementStddev * 1000) ** 2,
-      simulationParams.modelSignalSpeedFraction,
-      // convert µs to seconds
-      simulationParams.modelNodeLatency * 1e-6,
+      simulationParams.messageDistanceMax * 1000,
+      // model position state variance: convert km stdev to m variance
+      (simulationParams.modelPositionStddev * 1000) ** 2,
+      // initial model message speed as a fraction of the speed of light
+      simulationParams.modelBeta,
+      // model message speed variance: convert stddev to variance
+      simulationParams.modelBetaStddev ** 2,
+      // iniital model latency: convert µs to s
+      simulationParams.modelTau * 1e-6,
+      // model latency variance: convert convert µs stddev to s variance
+      (simulationParams.modelTauStddev * 1e-6) ** 2,
+      // time of flight observation variance: convert µs stddev to s variance
+      (simulationParams.modelTofObservationStddev * 1e-6) ** 2,
     );
 
     const sim = JSON.parse(simString);

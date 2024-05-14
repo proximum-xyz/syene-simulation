@@ -4,10 +4,13 @@ use nalgebra::{
     allocator::Allocator, Const, DefaultAllocator, DimMin, OMatrix, OVector, RealField,
 };
 
+use crate::physics::C;
 use crate::types::Node;
 
-// Calculate the position of one node.
-pub type SS = Const<3>;
+// Dimensions: ECEF coordinates +  [x_ECEF; y_ECEF; z_ECEF; β_c; τ]
+// β_c: average message propagation speed from this node to other nodes
+// τ: average latency from this node to other nodes
+pub type SS = Const<5>;
 
 // Observation size is the number of distance measurements
 #[cfg(n_measurements = "1")]
@@ -41,7 +44,9 @@ const MINIMUM_DISTANCE: f64 = 1.0;
 // We use the same precision for all numbers
 type Precision = f64;
 
-// State update model (nothing moves)
+// State update model (nothing changes by default)
+// TODO: move node closer to asserted position with spring constant (delta proportional to distance between estimated and asserted position)
+// Even with a relatively small constant, this should prevent position drift of all nodes
 pub struct StationaryStateModel<R>
 where
     R: RealField,
@@ -96,7 +101,7 @@ impl NonlinearObservationModel {
         Self {}
     }
 
-    // Get the evaluation function and Jacobian of the observation model for one node at the node index measuring distances to other nodes
+    // Get the evaluation function and Jacobian of the observation model for one node at the node index measuring time of flight to other nodes
     // Note: the linearization is obviously only useful for the specified node indices and positions!
     pub fn linearize_at(
         &self,
@@ -119,26 +124,44 @@ impl NonlinearObservationModel {
         let evaluation_func = Box::new(move |state: &OVector<f64, SS>| {
             let mut y = OVector::<f64, OS>::zeros();
 
-            // calculate the distance between nodes
             for i in 0..OS::dim() {
-                y[i] = (their_node_states.column(i) - state).norm();
+                let their_state = their_node_states.column(i);
+                // calculate the distance between nodes (rows 0-2 are the X,Y,Z positions)
+                let distance = (their_state.rows(0, 3) - state.rows(0, 3)).norm();
+
+                // calculate estimated time-of-flight between nodes: we assume a ping with our parameters and a pong with their parameters
+                y[i] = distance / (C * state[3])
+                    + state[4]
+                    + distance / (C * their_state[3])
+                    + their_state[4];
             }
             y
         });
 
-        let my_state = nodes[my_index].state_and_covariance.state();
+        let state = nodes[my_index].state_and_covariance.state();
         let mut observation_matrix = OMatrix::<f64, OS, SS>::zeros();
 
         for i in 0..OS::dim() {
-            let delta = their_node_states.column(i) - my_state;
-            let distance = delta.norm();
+            let delta = their_node_states.column(i).rows(0, 3) - state.rows(0, 3);
+            let distance = delta.rows(0, 3).norm();
 
             // if the distance is below the minimum, we expect a measurement of ~zero
             if distance > MINIMUM_DISTANCE {
-                let jacobian_row = -delta.transpose() / distance;
+                // Partial derivatives with respect to x, y, z
+                let jacobian_position = delta.rows(0, 3).transpose() / distance;
+
+                // Partial derivative with respect to β_c (average message speed fraction of c)
+                let jacobian_beta = distance / (C * state[3] * state[3]);
+
+                // Partial derivative with respect to τ (average latency)
+                let jacobian_tau = 1.0;
+
+                // Fill in the Jacobian matrix
                 observation_matrix
                     .view_mut((i, 0), (1, 3))
-                    .copy_from(&jacobian_row);
+                    .copy_from(&jacobian_position);
+                observation_matrix[(i, 3)] = jacobian_beta;
+                observation_matrix[(i, 4)] = jacobian_tau;
             }
         }
 
