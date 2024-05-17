@@ -81,7 +81,7 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
   simulation,
 }) => {
 
-  const [showIntroModal, setShowIntroModal] = useState(false);
+  const [showIntroModal, setShowIntroModal] = useState(true);
   const [isFormCollapsed, setIsFormCollapsed] = useState(false);
   const [isStatsCollapsed, setIsStatsCollapsed] = useState(false);
 

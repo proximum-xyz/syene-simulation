@@ -8,10 +8,7 @@ import { COLORS, Simulation, SimulationParams } from '../types';
 import SimulationOverlay from './SimulationOverlay';
 import NodeDescriptionPopup, { POSITION_TYPE } from './NodeDescriptionPopup';
 import { cellToBoundary } from 'h3-js';
-
-function rad2deg(radians: number) {
-  return radians * 180 / Math.PI;
-}
+import { rad2deg } from '../utils';
 
 
 

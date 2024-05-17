@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { Dispatch, SetStateAction } from 'react';
 import { COLORS, SimulationParamFields } from '../types';
 import styled from 'styled-components';
 import Slider from 'rc-slider';
 import { Controller, Control, UseFormWatch } from 'react-hook-form';
-import ReactMarkdown from 'react-markdown';
 import 'rc-slider/assets/index.css';
 
 type FieldKeys = keyof SimulationParamFields;
@@ -118,7 +117,7 @@ const SliderInput = styled.input`
   margin-left: 8px;
 `;
 
-const HelpTextPopup = styled.div`
+export const HelpTextPopup = styled.div`
   position: fixed;
   top: 45%;
   left: 50%;
@@ -133,17 +132,17 @@ const HelpTextPopup = styled.div`
   box-sizing: border-box;
 `;
 
-const HelpTextTitle = styled.h2`
+export const HelpTextTitle = styled.h2`
   margin-top: 0;
   color: #00ff9f;
 `;
 
-const HelpTextContent = styled.div`
+export const HelpTextContent = styled.div`
   margin-bottom: 0;
   font-size:1rem;
 `;
 
-const CloseButton = styled.button`
+export const CloseButton = styled.button`
   padding: 6px 12px;
   background-color: ${COLORS.pink};
   color: white;
@@ -184,15 +183,15 @@ const SliderInputWrapper = styled.div`
 `;
 
 
-const titleTexts: FormDescriptor = {
+export const titleTexts: FormDescriptor = {
   nNodes: 'Nodes',
   nMeasurements: 'Measurements',
   nEpochs: 'Epochs',
   h3Resolution: 'H3 Resolution',
-  assertedPositionStddev: 'Asserted Position Std. Dev. (km)',
-  betaRange: 'Mean Message Speed Range (c)',
+  assertedPositionStddev: 'Claimed Position Dishonesty (σ km)',
+  betaRange: 'β: Message Speed (% c)',
   betaStddev: 'Message Speed Std. Dev.',
-  tauRange: 'Mean Latency Range (ms)',
+  tauRange: 'τ: Latency (ms)',
   tauStddev: "Latency Std. Dev. (ms)",
   messageDistanceMax: 'Message Range (km)',
   modelPositionStddev: 'Estimator State Std. Dev. (km)',
@@ -203,7 +202,7 @@ const titleTexts: FormDescriptor = {
   modelTofObservationStddev: 'Model Time-of-Flight Std. Dev. (ms)',
 }
 
-const helpTexts: FormDescriptor = {
+export const helpTexts: FormDescriptor = {
   nNodes: `
   The number of nodes participating in the simulation.
   
@@ -211,7 +210,7 @@ const helpTexts: FormDescriptor = {
 
   Increasing the number of nodes improves position accuracy and computational difficulty.
 
-  This parameter is set during compilation and cannot be changed here currently.
+  In practice we expect the mature Proximum network will include >> 1,000 nodes (but this is slow to simulate)!
   `,
   nMeasurements: `
   The number of distance measurements between node pairs used within each position estimation. For each measurement, one node pings another node and waits for a signed pong response. The response time puts an upper bound on the distance to the other node.
@@ -238,7 +237,7 @@ const helpTexts: FormDescriptor = {
   Can the Proximum network detect adversarial nodes reporting false locations? Run the simulation to find out!
   `,
   betaRange: `
-  Nodes send each other messages to measure distances. These messages propagate at different speeds depending on the communication medium. This simulation assumes each node always uses a single communication channel and selects a fixed message speed for that node from a uniform distribution over the specified range.
+  Nodes send each other messages to measure distances. These messages propagate at different speeds depending on the communication medium. This Beta parameter specifies the range of message speeds in the simulation. This simulation chooses a message speed for each node drawn from a uniform distribution over the specified range.
   
   General message speeds (c = speed of light) are as follows:
   * General IP networks: ~0.1c
@@ -248,7 +247,7 @@ const helpTexts: FormDescriptor = {
   * microwave: 0.99c.
   * laser: 0.99c
   
-  As the Proximum network matures, ASICs using EM communication channels may push average message speeds toward the upper bound of 1c. Proximum estimates the message speed for each node (see the *Model Message Speed* parameter). The lower bound on permitted message speed may increase over time to incentivize nodes to improve message speed and position resolution.
+  As the Proximum network matures, ASICs using EM communication channels may push average message speeds toward the upper bound of 1c. Proximum estimates the message speed for each node. The lower bound on permitted message speed may increase over time to incentivize nodes to improve message speed and position resolution.
   `,
   betaStddev: `
   Each message travels at a slightly different speed depending on routing, etc. This simulation adds noise drawn from the normal distribution to a node's mean message speed when making each distance measurement.
@@ -320,6 +319,7 @@ export const FormField = ({
   name,
   control,
   watch,
+  setShowHelp,
   options = {
     step: 0.01,
     slider: false,
@@ -329,11 +329,9 @@ export const FormField = ({
   name: FieldKeys
   control: Control<SimulationParamFields, any>,
   watch: UseFormWatch<SimulationParamFields>,
+  setShowHelp: Dispatch<SetStateAction<keyof SimulationParamFields | undefined>>,
   options?: FieldOptions
 }) => {
-
-  const [showHelp, setShowHelp] = useState<boolean>(false);
-
   const numericController = () => (
     options.readonly ? <ReadOnlyValue>{watch(name)}</ReadOnlyValue>
       :
@@ -400,20 +398,10 @@ export const FormField = ({
       <FormGroup>
         <Label>
           {titleTexts[name]}
-          <HelpIcon onClick={() => setShowHelp(true)}>&#9432;</HelpIcon>
+          <HelpIcon onClick={() => setShowHelp(name)}>&#9432;</HelpIcon>
         </Label>
         {options.slider ? sliderController() : numericController()}
       </FormGroup>
-      {showHelp && <HelpTextPopup>
-        <HelpTextTitle>{titleTexts[name]}</HelpTextTitle>
-        <HelpTextContent>
-          <ReactMarkdown>
-            {helpTexts[name] + "\n\nSee the [Proximum lightpaper](https://www.proximum.xyz/proximum-lightpaper.pdf) for more information."}
-          </ReactMarkdown>
-        </HelpTextContent>
-        <CloseButton onClick={() => setShowHelp(false)}>Close</CloseButton>
-      </HelpTextPopup>
-      }
     </>
   )
 }

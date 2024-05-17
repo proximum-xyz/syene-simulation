@@ -3,6 +3,7 @@ import { Popup } from 'react-leaflet';
 import { Node } from '../types';
 import styled from 'styled-components';
 import Markdown from 'react-markdown';
+import { rad2deg } from '../utils';
 
 const DarkModePopup = styled(Popup)`
   .leaflet-popup-content-wrapper {
@@ -39,13 +40,13 @@ export enum POSITION_TYPE {
 
 const formatState = (node: Node) => (
   `
-Lat: ${node.true_wgs84.latitude.toFixed(2)} rad (Est: ${node.estimated_wgs84.latitude.toFixed(2)} rad)
+Latitude: ${rad2deg(node.true_wgs84.latitude).toFixed(2)}° (Est: ${rad2deg(node.estimated_wgs84.latitude).toFixed(2)}°)
 
-Lng: ${node.true_wgs84.longitude.toFixed(2)} rad (Est: ${node.estimated_wgs84.longitude.toFixed(2)} rad)
+Longitude: ${rad2deg(node.true_wgs84.longitude).toFixed(2)}° (Est: ${rad2deg(node.estimated_wgs84.longitude).toFixed(2)}°)
 
-Beta: ${node.beta.toFixed(2)} c (Est: ${node.estimated_beta.toFixed(2)} c)
+β: ${node.beta.toFixed(2)} c (Est: ${node.estimated_beta.toFixed(2)} c)
 
-Tau: ${(node.tau * 1000).toFixed(2)} ms (Est: ${(node.estimated_tau * 1000).toFixed(2)} ms)
+τ: ${(node.tau * 1000).toFixed(2)} ms (Est: ${(node.estimated_tau * 1000).toFixed(2)} ms)
 `
 )
 

@@ -1,5 +1,5 @@
 use adskalman::{ObservationModel, TransitionModelLinearNoControl};
-use log::{info, trace};
+use log::trace;
 use nalgebra::DimName;
 use nalgebra::{
     allocator::Allocator, Const, DefaultAllocator, DimMin, OMatrix, OVector, RealField,

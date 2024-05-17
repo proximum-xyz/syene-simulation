@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CompilerParams, SimulationParamFields, SimulationParams } from '../types';
-import { SectionHeader1, FormWrapper, FormField, Button, ProgressIndicator } from './SimulationFormComponents';
+import { SectionHeader1, FormWrapper, FormField, Button, ProgressIndicator, HelpTextPopup, HelpTextTitle, HelpTextContent, CloseButton, titleTexts, helpTexts } from './SimulationFormComponents';
+
+import ReactMarkdown from 'react-markdown';
 
 const defaultSimulationParams = {
   nNodes: 25,
@@ -51,6 +53,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
   });
 
   const [isSimulating, setIsSimulating] = useState(false);
+  const [showHelp, setShowHelp] = useState<keyof SimulationParamFields>();
 
   const onSubmit = async (params: SimulationParamFields) => {
     setIsSimulating(true);
@@ -113,29 +116,39 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
     <FormWrapper>
       <h2>Proximum Simulation</h2>
       <form onSubmit={handleSubmit(onSubmit as any)}>
-        <FormField name='nNodes' control={control} watch={watch} />
-        <FormField name='nEpochs' control={control} watch={watch} />
-        <FormField name='nMeasurements' control={control} watch={watch} options={{ readonly: true }} />
+        <FormField name='nNodes' control={control} watch={watch} setShowHelp={setShowHelp} />
+        <FormField name='nEpochs' control={control} watch={watch} setShowHelp={setShowHelp} />
+        <FormField name='nMeasurements' control={control} watch={watch} setShowHelp={setShowHelp} options={{ readonly: true }} />
 
         <SectionHeader1>Physical Parameters</SectionHeader1>
-        <FormField name='assertedPositionStddev' control={control} watch={watch} options={{ min: 0, max: 10000 }} />
-        <FormField name='betaRange' control={control} watch={watch} options={{ min: 0, max: 1, step: 0.01, slider: true }} />
-        {/* <FormField name='betaStddev' control={control} watch={watch} options={{ min: 0.01, max: 1, step: 0.01 }} /> */}
-        <FormField name='tauRange' control={control} watch={watch} options={{ min: 0, max: 100, step: 0.001, slider: true }} />
-        {/* <FormField name='tauStddev' control={control} watch={watch} options={{ min: 0.001, max: 10000, step: 0.001 }} /> */}
-        <FormField name='messageDistanceMax' control={control} watch={watch} options={{ min: 100, max: 13000 }} />
+        <FormField name='assertedPositionStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 10000 }} />
+        <FormField name='betaRange' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 1, step: 0.01, slider: true }} />
+        {/* <FormField name='betaStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0.01, max: 1, step: 0.01 }} /> */}
+        <FormField name='tauRange' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 100, step: 0.001, slider: true }} />
+        {/* <FormField name='tauStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0.001, max: 10000, step: 0.001 }} /> */}
+        <FormField name='messageDistanceMax' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 100, max: 13000 }} />
 
         {/* <SectionHeader1>Model Parameters</SectionHeader1>
-        <FormField name='modelPositionStddev' control={control} watch={watch} options={{ min: 0.0, step: 0.001 }} />
-        <FormField name='modelBeta' control={control} watch={watch} options={{ min: 0, max: 1, step: 0.01 }} />
-        <FormField name='modelBetaStddev' control={control} watch={watch} options={{ min: 0, max: 0.5, step: 0.01 }} />
-        <FormField name='modelTau' control={control} watch={watch} options={{ min: 0, max: 100000, step: 0.001 }} />
-        <FormField name='modelTauStddev' control={control} watch={watch} options={{ min: 0, max: 100000, step: 0.001 }} />
-        <FormField name='modelTofObservationStddev' control={control} watch={watch} options={{ min: 0.0, step: 0.001 }} /> */}
+        <FormField name='modelPositionStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0.0, step: 0.001 }} />
+        <FormField name='modelBeta' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 1, step: 0.01 }} />
+        <FormField name='modelBetaStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 0.5, step: 0.01 }} />
+        <FormField name='modelTau' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 100000, step: 0.001 }} />
+        <FormField name='modelTauStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 100000, step: 0.001 }} />
+        <FormField name='modelTofObservationStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0.0, step: 0.001 }} /> */}
 
         {isSimulating ? <ProgressIndicator /> : <Button type="submit" disabled={isSimulating}>Simulate</Button>}
 
       </form>
+      {showHelp && <HelpTextPopup>
+        <HelpTextTitle>{titleTexts[showHelp]}</HelpTextTitle>
+        <HelpTextContent>
+          <ReactMarkdown>
+            {helpTexts[showHelp] + "\n\nSee the [Proximum lightpaper](https://www.proximum.xyz/proximum-lightpaper.pdf) for more information."}
+          </ReactMarkdown>
+        </HelpTextContent>
+        <CloseButton onClick={() => setShowHelp(undefined)}>Close</CloseButton>
+      </HelpTextPopup>
+      }
     </FormWrapper >
   );
 };
