@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Popup, Polygon } from 'react-leaflet';
+import React from 'react';
+import { Popup } from 'react-leaflet';
 import { Node } from '../types';
 import styled from 'styled-components';
 import Markdown from 'react-markdown';

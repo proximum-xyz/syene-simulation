@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { COLORS, SimulationParamFields, SimulationParams } from '../types';
+import { COLORS, SimulationParamFields } from '../types';
 import styled from 'styled-components';
 import Slider from 'rc-slider';
 import { Controller, Control, UseFormWatch } from 'react-hook-form';
