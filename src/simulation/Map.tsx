@@ -6,37 +6,14 @@ import Ellipse, { EllipseProps } from './LeafletEllipse';
 import init, { simulate, InitOutput } from 'rust-proximum-simulation';
 import { COLORS, Simulation, SimulationParams } from '../types';
 import SimulationOverlay from './SimulationOverlay';
-import styled from 'styled-components';
+import NodeDescriptionPopup, { POSITION_TYPE } from './NodeDescriptionPopup';
 import { cellToBoundary } from 'h3-js';
 
 function rad2deg(radians: number) {
   return radians * 180 / Math.PI;
 }
 
-function distanceKm(a: [number, number, number], b: [number, number, number]) {
-  return (Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2) / 1000).toFixed(1);
-}
 
-const DarkModePopup = styled(Popup)`
-  .leaflet-popup-content-wrapper {
-    background-color: #1f1f1f;
-    color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-
-  .leaflet-popup-tip {
-    background-color: #1f1f1f;
-  }
-
-  .leaflet-popup-close-button {
-    color: #ffffff;
-  }
-
-  .leaflet-popup-close-button:hover {
-    color: #ff4081;
-  }
-`;
 
 const Map = () => {
   const [simulation, setSimulation] = useState<Simulation>();
@@ -55,34 +32,20 @@ const Map = () => {
       simulationParams.nNodes,
       simulationParams.nEpochs,
       simulationParams.h3Resolution,
-      // accuracy of position assertions: convert km stddev to meters^2 variance
-      (simulationParams.assertedPositionStddev * 1000) ** 2,
-      // min message speed as a fraction of the speed of light
-      simulationParams.beta[0],
-      // max message speed as a fraction of the speed of light
-      simulationParams.beta[1],
-      // message speed per-message variance: convert std dev to variance
-      simulationParams.betaStddev ** 2,
-      // min node latency: convert µs to seconds
-      simulationParams.tau[0] * 1e-6,
-      // max node latency: convert µs to seconds
-      simulationParams.tau[1] * 1e-6,
-      // latency per-measurement variance: convert std dev to variance
-      (simulationParams.tauStddev * 1e-6) ** 2,
-      // convert km to meters
-      simulationParams.messageDistanceMax * 1000,
-      // model position state variance: convert km stdev to m variance
-      (simulationParams.modelPositionStddev * 1000) ** 2,
-      // initial model message speed as a fraction of the speed of light
+      simulationParams.assertedPositionVariance,
+      simulationParams.betaMin,
+      simulationParams.betaMax,
+      simulationParams.betaVariance,
+      simulationParams.tauMin,
+      simulationParams.tauMax,
+      simulationParams.tauVariance,
+      simulationParams.messageDistanceMax,
+      simulationParams.modelPositionVariance,
       simulationParams.modelBeta,
-      // model message speed variance: convert stddev to variance
-      simulationParams.modelBetaStddev ** 2,
-      // iniital model latency: convert µs to s
-      simulationParams.modelTau * 1e-6,
-      // model latency variance: convert convert µs stddev to s variance
-      (simulationParams.modelTauStddev * 1e-6) ** 2,
-      // time of flight observation variance: convert µs stddev to s variance
-      (simulationParams.modelTofObservationStddev * 1e-6) ** 2,
+      simulationParams.modelBetaVariance,
+      simulationParams.modelTau,
+      simulationParams.modelTauVariance,
+      simulationParams.modelTofObservationVariance,
     );
 
     const sim = JSON.parse(simString);
@@ -115,25 +78,19 @@ const Map = () => {
       <React.Fragment key={i}>
         {/* H3 tilse */}
         <Polygon positions={assertedPolygonBoundary} color={COLORS.pink} fillColor={COLORS.pink} fillOpacity={0.2} weight={1}>
-          <DarkModePopup>Node {i}: asserted H3 polygon {node.asserted_index}</DarkModePopup>
+          <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.assertedCell} />
         </Polygon>
 
         <Polyline positions={[assertedLatLngDeg, trueLatLngDeg, estLatLngDeg]} color={COLORS.green} weight={1} />
-        {/* {i > 0 && <GeodesicLine points={[node0TrueLatLngDeg, trueLatLngDeg]} options={{ color: "gray", opacity: 0.5 }} />} */}
         <CircleMarker center={estLatLngDeg} color={COLORS.blue} fill fillColor={COLORS.blue} radius={3}>
-          <DarkModePopup><p>Node {i} estimated position</p>Error: {distanceKm(node.true_position, node.estimated_position)} km</DarkModePopup>
+          <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.estimated} />
         </CircleMarker>
         <CircleMarker center={assertedLatLngDeg} color={COLORS.pink} fill fillColor={COLORS.pink} radius={3}>
-          <DarkModePopup><p>Node {i} asserted position</p>Error: {distanceKm(node.true_position, node.asserted_position)} km</DarkModePopup>
+          <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.asserted} />
         </CircleMarker>
-
-        {/* 1 standard deviation location confidence ellipse */}
-
         <Ellipse {...ellipseConfig}>
-          <DarkModePopup><p>Node {i} estimated position and 1σ uncertainty ellipse</p>Error: {distanceKm(node.true_position, node.asserted_position)} km</DarkModePopup>
+          <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.estimatedEllipse} />
         </Ellipse>
-
-        {/* <CircleMarker center={trueLatLngDeg} color={COLORS.green} fill fillColor={COLORS.green} radius={4} /> */}
 
         {/* <GeodesicLine points={[trueLatLngDeg, assertedLatLngDeg]} options={{ color: "ff8c00" }} />
         <GeodesicLine points={[trueLatLngDeg, estLatLngDeg]} options={{ color: COLORS.blue }} /> */}
@@ -143,7 +100,7 @@ const Map = () => {
           iconSize: [30, 30],
           iconAnchor: [15, 15]
         })}>
-          <DarkModePopup>Node {i}: true position</DarkModePopup>
+          <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.true} />
         </Marker>
       </React.Fragment >
     );

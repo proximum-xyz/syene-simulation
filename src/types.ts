@@ -24,6 +24,8 @@ export interface Node {
   true_position: [number, number, number];
   asserted_position: [number, number, number];
   estimated_position: [number, number, number];
+  estimated_beta: number,
+  estimated_tau: number,
   estimation_variance: [number, number, number];
   en_variance_semimajor_axis: [number, number],
   en_variance_semiminor_axis: [number, number],
@@ -32,8 +34,8 @@ export interface Node {
   true_wgs84: WGS84;
   estimated_wgs84: WGS84;
   asserted_wgs84: WGS84;
-  channel_speed: number;
-  latency: number;
+  beta: number;
+  tau: number;
 }
 
 export interface Stats {
@@ -53,31 +55,65 @@ export interface SimulationParams {
   nEpochs: number;
   // position resolution at which nodes assert location
   h3Resolution: number;
-  // accuracy at which nodes assert position (km stddev)
-  assertedPositionStddev: number;
+  // accuracy at which nodes assert position (m^2)
+  assertedPositionVariance: number;
   // message speed range [min, max] as a fraction of c, the speed of light 
-  beta: [number, number];
-  // per-message message speed stddev as a fraction of c
-  betaStddev: number
+  betaMin: number
+  betaMax: number
+  // per-message message speed variance as a fraction of c
+  betaVariance: number
   // latency range [min, max] (µs)
-  tau: [number, number];
-  // per-message latency stddev (µs)
-  tauStddev: number;
-  // max message range (km)
+  tauMin: number
+  tauMax: number
+  // per-message latency stddev (s^2)
+  tauVariance: number;
+  // max message range (m)
   messageDistanceMax: number;
-  // model position state update standard deviation
-  modelPositionStddev: number;
+  // model position state update varians (m^2)
+  modelPositionVariance: number;
   // initial model for message speed: fraction of c
   modelBeta: number;
-  // model message speed state update standard deviation
-  modelBetaStddev: number;
-  // initial model latency (µs)
+  // model message speed state update variance
+  modelBetaVariance: number;
+  // initial model latency (s)
   modelTau: number;
   // model latency state update standard deviation
-  modelTauStddev: number;
-  // model time of flight observation standard devation (µs)
-  modelTofObservationStddev: number;
+  modelTauVariance: number;
+  // model time of flight observation variance (s^2)
+  modelTofObservationVariance: number;
 }
+
+// units are in km, ms, and std deviation
+export type SimulationParamFields = {
+  nNodes: string
+  nMeasurements: string
+  nEpochs: string
+  h3Resolution: string
+  // km
+  assertedPositionStddev: string
+  // %c
+  betaRange: string
+  // %c
+  betaStddev: string
+  // ms
+  tauRange: string
+  // ms
+  tauStddev: string
+  // km
+  messageDistanceMax: string
+  // km
+  modelPositionStddev: string
+  // %c
+  modelBeta: string
+  // %c
+  modelBetaStddev: string
+  // ms
+  modelTau: string
+  // ms
+  modelTauStddev: string
+  // 
+  modelTofObservationStddev: string
+};
 
 // this is what we get back from the Rust simulate call
 export interface Simulation {

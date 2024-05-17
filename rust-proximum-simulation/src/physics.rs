@@ -14,15 +14,15 @@ pub fn simulate_ping_pong_tof(n1: &Node, n2: &Node, beta_variance: f64, tau_vari
     // but the actual time of flight depends on the variable signal speed and latency of the nodes
     // * each measurement consists of a ping from node n1 to node n2 and a pong from node n2 to node n1.
     // * the distance estimation models the time it would take for a ping and pong to occur using a fixed message transmission speed (% of c) and fixed latency (s) for each node to respond.
-    // * the actual time taken by the ping is determined by the message speed c * n1.channel_speed plus n1.latency
-    // * the actual time taken by the pong is determined by the message speed c * n2.channel_speed plus n2.latency
+    // * the actual time taken by the ping is determined by the message speed c * n1.beta plus n1.tau
+    // * the actual time taken by the pong is determined by the message speed c * n2.beta plus n2.latency
     let true_distance = (n1.true_position - n2.true_position).norm();
 
     // Noise distributions for message speed and latency
     let mut rng = thread_rng();
-    let beta_1_noise_dist = Normal::new(n1.channel_speed, beta_variance.powf(0.5))
+    let beta_1_noise_dist = Normal::new(n1.beta, beta_variance.powf(0.5))
         .expect("could not create normal distribution");
-    let tau_1_noise_dist = LogNormal::new(n1.latency.ln(), tau_variance.powf(0.5).ln())
+    let tau_1_noise_dist = LogNormal::new(n1.tau.ln(), tau_variance.powf(0.5).ln())
         .expect("could not create lognormal distribution");
 
     // ensure the speed is between 0 c and 1 c
@@ -35,9 +35,9 @@ pub fn simulate_ping_pong_tof(n1: &Node, n2: &Node, beta_variance: f64, tau_vari
     // let tau_1 = tau_1_noise_dist.sample(&mut rng);
     let tau_1 = 0.0;
 
-    let beta_2_noise_dist = Normal::new(n2.channel_speed, beta_variance.powf(0.5))
+    let beta_2_noise_dist = Normal::new(n2.beta, beta_variance.powf(0.5))
         .expect("could not create normal distribution");
-    let tau_2_noise_dist = LogNormal::new(n2.latency.ln(), tau_variance.powf(0.5).ln())
+    let tau_2_noise_dist = LogNormal::new(n2.tau.ln(), tau_variance.powf(0.5).ln())
         .expect("could not create lognormal distribution");
 
     let mut beta_2 = beta_2_noise_dist.sample(&mut rng);
@@ -86,7 +86,7 @@ pub fn generate_measurements(
     beta_variance: f64,
     tau_variance: f64,
 ) -> (Vec<usize>, OVector<f64, OS>) {
-    info!("Generating {} measurements", n_measurements);
+    trace!("Generating {} measurements", n_measurements);
 
     let mut rng = rand::thread_rng();
 

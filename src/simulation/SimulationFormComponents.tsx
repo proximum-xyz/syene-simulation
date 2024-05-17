@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
-import { COLORS, SimulationParams } from '../types';
+import { COLORS, SimulationParamFields, SimulationParams } from '../types';
 import styled from 'styled-components';
 import Slider from 'rc-slider';
 import { Controller, Control, UseFormWatch } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 import 'rc-slider/assets/index.css';
 
-type FieldKeys = keyof SimulationParams;
+type FieldKeys = keyof SimulationParamFields;
 
 type FormDescriptor = {
   [x in FieldKeys]: string;
@@ -190,17 +190,17 @@ const titleTexts: FormDescriptor = {
   nEpochs: 'Epochs',
   h3Resolution: 'H3 Resolution',
   assertedPositionStddev: 'Asserted Position Std. Dev. (km)',
-  beta: 'Mean Message Speed Range (c)',
+  betaRange: 'Mean Message Speed Range (c)',
   betaStddev: 'Message Speed Std. Dev.',
-  tau: 'Mean Latency Range (µs)',
-  tauStddev: "Latency Std. Dev. (µs)",
+  tauRange: 'Mean Latency Range (ms)',
+  tauStddev: "Latency Std. Dev. (ms)",
   messageDistanceMax: 'Message Range (km)',
   modelPositionStddev: 'Estimator State Std. Dev. (km)',
   modelBeta: 'Model Message Speed (% c)',
   modelBetaStddev: 'Model Message Speed Std. Dev. (% c)',
-  modelTau: 'Model Latency (µs)',
-  modelTauStddev: 'Model Latency Std. Dev. (µs)',
-  modelTofObservationStddev: 'Model Time-of-Flight Std. Dev. (µs)',
+  modelTau: 'Model Latency (ms)',
+  modelTauStddev: 'Model Latency Std. Dev. (ms)',
+  modelTofObservationStddev: 'Model Time-of-Flight Std. Dev. (ms)',
 }
 
 const helpTexts: FormDescriptor = {
@@ -237,7 +237,7 @@ const helpTexts: FormDescriptor = {
 
   Can the Proximum network detect adversarial nodes reporting false locations? Run the simulation to find out!
   `,
-  beta: `
+  betaRange: `
   Nodes send each other messages to measure distances. These messages propagate at different speeds depending on the communication medium. This simulation assumes each node always uses a single communication channel and selects a fixed message speed for that node from a uniform distribution over the specified range.
   
   General message speeds (c = speed of light) are as follows:
@@ -255,16 +255,16 @@ const helpTexts: FormDescriptor = {
   
   Note that the final message speed for each message is always bounded to the range (0c, 1c).
   `,
-  tau: `
+  tauRange: `
   Nodes have an internal latency: it takes them time to process and respond to messages after they receive the message. This simulation assumes each node has a fixed mean latency drawn from a uniform distribution over the specified range.
 
   Reference latencies:
-  * General IP networks: 20,000-40,000 µs
-  * High frequency trading: 1-10 µs
+  * General IP networks: 20-40 ms
+  * High frequency trading: 0.001-0.01 ms
   
   Proximum estimates the mean latency for each node.
   
-  As the Proximum network matures, ASICs may push latencies toward a lower bound of ~1 µs. Permitted latency may drop over time to incentivize nodes to improve latency and position resolution.
+  As the Proximum network matures, ASICs may push latencies toward a lower bound of ~0.001 ms. Permitted latency may drop over time to incentivize nodes to improve latency and position resolution.
   `,
   tauStddev: `
   The time it takes for a node to respond to a given message varies slightly depending on processor load, etc. This simulation adds noise drawn from the lognormal distribution to a node's mean latency when making each distance measurement.
@@ -327,8 +327,8 @@ export const FormField = ({
   }
 }: {
   name: FieldKeys
-  control: Control<SimulationParams, any>,
-  watch: UseFormWatch<SimulationParams>,
+  control: Control<SimulationParamFields, any>,
+  watch: UseFormWatch<SimulationParamFields>,
   options?: FieldOptions
 }) => {
 

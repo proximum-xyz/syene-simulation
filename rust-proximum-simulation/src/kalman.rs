@@ -80,10 +80,11 @@ where
             position_variance,
             beta_variance,
             tau_variance,
-        )
-        .zip_map(&state_factor, |a, b| a / (b * b));
+        );
+        // .zip_map(&state_factor, |a, b| a / (b * b));
         let transition_noise_covariance =
             OMatrix::<R, SS, SS>::from_diagonal(&transition_noise_diagonal);
+
         let transition_model_transpose = transition_model.transpose();
 
         Self {
@@ -160,8 +161,9 @@ impl NonlinearObservationModel {
                   distance / (C * normalized_state[3]) + normalized_state[4]
                   // pong
                   + distance / (C * their_normalized_state[3]) + their_normalized_state[4];
+
+                trace!("our normalized state: {:#?}, their normalized state: {:#?}, predicted measurement: {}", normalized_state, their_normalized_state, y[i]);
             }
-            trace!("predicted measurement: {}", y);
             y
         });
 
@@ -194,9 +196,9 @@ impl NonlinearObservationModel {
 
         let observation_matrix_transpose = observation_matrix.transpose();
         let observation_noise_covariance =
-            OMatrix::<f64, OS, OS>::identity() * observation_noise_covariance;
+            OMatrix::<f64, OS, OS>::identity() * 10.0; // TODO - better values observation_noise_covariance;
 
-        info!("ob ns cov: {:#?}", observation_noise_covariance);
+        trace!("ob ns cov: {:#?}", observation_noise_covariance);
 
         LinearizedObservationModel {
             evaluation_func,

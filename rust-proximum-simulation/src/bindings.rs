@@ -12,7 +12,7 @@ use wasm_bindgen::prelude::*;
 pub fn init_logger() {
     // ;
     if log::max_level() == LevelFilter::Off {
-        init_with_level(log::Level::Trace).expect("error initializing logger");
+        init_with_level(log::Level::Info).expect("error initializing logger");
     }
 }
 

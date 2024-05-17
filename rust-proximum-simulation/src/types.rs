@@ -52,14 +52,16 @@ pub struct Node {
     pub asserted_position: ECEF<f64>,
     #[serde(with = "serialize_ecef")]
     pub estimated_position: ECEF<f64>,
+    pub estimated_beta: f64,
+    pub estimated_tau: f64,
     pub en_variance_semimajor_axis: OVector<f64, Const<2>>,
     pub en_variance_semimajor_axis_length: f64,
     pub en_variance_semiminor_axis_length: f64,
     pub true_wgs84: WGS84<f64>,
     pub estimated_wgs84: WGS84<f64>,
     pub asserted_wgs84: WGS84<f64>,
-    pub channel_speed: f64,
-    pub latency: f64,
+    pub beta: f64,
+    pub tau: f64,
     // Kalman filter state and covariance
     #[serde(skip)]
     pub state_and_covariance: StateAndCovariance<f64, SS>,

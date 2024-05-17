@@ -33,7 +33,7 @@ fn calculate_rms_error(nodes: &[Node], position_type: PositionType) -> f64 {
         squared_diff_sum += squared_diff;
 
         if position_type == PositionType::Estimated {
-            info!(
+            trace!(
                 "node true position: {:#?}, asserted pos: {:#?}, est position: {:#?}, squared diff: {}",
                 node.true_position,node.asserted_position, node.estimated_position, squared_diff
             );
@@ -75,19 +75,19 @@ impl Node {
         .component_div(&STATE_FACTOR);
 
         // convert from normalized real units to internal numbers
-        let state_covariance_diagonal = OVector::<f64, SS>::new(
-            model_position_variance,
-            model_position_variance,
-            model_position_variance,
-            model_beta_variance,
-            model_tau_variance,
-        )
-        .zip_map(&STATE_FACTOR, |a, b| a / (b * b));
+        // let state_covariance_diagonal = OVector::<f64, SS>::new(
+        //     model_position_variance,
+        //     model_position_variance,
+        //     model_position_variance,
+        //     model_beta_variance,
+        //     model_tau_variance,
+        // )
+        // .zip_map(&STATE_FACTOR, |a, b| a / (b * b));
 
-        let covariance = OMatrix::<f64, SS, SS>::from_diagonal(&state_covariance_diagonal);
-        // let covariance = OMatrix::<f64, SS, SS>::identity() * 0.01;
+        // let covariance = OMatrix::<f64, SS, SS>::from_diagonal(&state_covariance_diagonal);
+        let covariance = OMatrix::<f64, SS, SS>::identity() * 1.0;
 
-        info!("id: {}, beta: {}, tau: {}, model_position_variance: {}, model_beta: {}, model_beta_variance: {}, model_tau: {}, model_tau_variance: {}",
+        trace!("id: {}, beta: {}, tau: {}, model_position_variance: {}, model_beta: {}, model_beta_variance: {}, model_tau: {}, model_tau_variance: {}",
           id,
           beta,
           tau,
@@ -98,9 +98,10 @@ impl Node {
           model_tau_variance,
         );
 
-        info!(
+        trace!(
             "Initial state: {:#?}, initial state covariance: {:#?}",
-            state, covariance
+            state,
+            covariance
         );
 
         Node {
@@ -111,6 +112,8 @@ impl Node {
             true_position,
             asserted_position,
             estimated_position: asserted_position,
+            estimated_beta: model_beta,
+            estimated_tau: model_tau,
             en_variance_semimajor_axis: OVector::<f64, Const<2>>::zeros(),
             en_variance_semimajor_axis_length: 0.0,
             en_variance_semiminor_axis_length: 0.0,
@@ -118,8 +121,8 @@ impl Node {
             // asserted and estimated position will diverge as the simulation progresses
             estimated_wgs84: WGS84::from(asserted_position),
             asserted_wgs84: WGS84::from(asserted_position),
-            channel_speed: beta,
-            latency: tau,
+            beta,
+            tau,
             state_and_covariance: StateAndCovariance::new(state, covariance),
         }
     }
@@ -130,20 +133,22 @@ impl Node {
         // update positions in various reference frames
         let estimated_position = ECEF::new(state.x, state.y, state.z);
         self.estimated_position = estimated_position;
+        self.estimated_beta = state[3];
+        self.estimated_tau = state[4];
         self.estimated_wgs84 = WGS84::from(estimated_position);
         // TODO: find source of NaNs eg with an ECEF of     [0.19173311262112122, -0.6806804671657253,-0.6952455384399419],
         self.estimated_index = ecef_to_h3(estimated_position, Resolution::try_from(10).unwrap());
         // get the variance in ECEF coordinates and project eigenvectors/values onto EN coordinates to plot confidence ellipse.
-        let covariance = self.state_and_covariance.covariance();
-        let ecef_covariance = covariance.view((0, 0), (3, 3));
+        let ecef_covariance =
+            self.state_and_covariance.covariance().view((0, 0), (3, 3)) * (STATE_FACTOR[0]);
+
+        trace!("Covariance: {:#?}", ecef_covariance);
         let eigendecomposition = ecef_covariance.symmetric_eigen();
         let eigenvectors = eigendecomposition.eigenvectors;
         let eigenvalues = eigendecomposition.eigenvalues;
 
         // TODO: sort eigenvalues, fix issue returning zeros
         // TODO: surely there is some way to do this transformation in nav_types?
-
-        info!("Covariance: {:#?}", covariance);
 
         let lat = self.estimated_wgs84.latitude_radians();
         let lon = self.estimated_wgs84.longitude_radians();
@@ -214,7 +219,7 @@ impl Simulation {
         model_tau_variance: f64,
         model_tof_observation_variance: f64,
     ) -> Self {
-        info!("setting up simulation");
+        trace!("setting up simulation");
         let mut nodes: Vec<Node> = Vec::new();
         let resolution = Resolution::try_from(h3_resolution).expect("invalid H3 resolution");
 
@@ -307,7 +312,32 @@ impl Simulation {
 
         trace!("state after: {:#?}", node.state_and_covariance);
 
-        trace!("finished Kalman filter step");
+        trace!("finished Kalman filter step. Now clamping state to earth's surface.");
+
+        let state = node.state_and_covariance.state_mut();
+        let normalized_state = normalize_state(state);
+
+        let wgs84_position: WGS84<f64> = ECEF::new(
+            normalized_state[0],
+            normalized_state[1],
+            normalized_state[2],
+        )
+        .into();
+
+        let clamped_ecef_position: ECEF<f64> = WGS84::from_radians_and_meters(
+            wgs84_position.latitude_radians(),
+            wgs84_position.longitude_radians(),
+            0.0,
+        )
+        .into();
+
+        let spring_displacement = (node.asserted_position - clamped_ecef_position) / 500.0;
+
+        let adjusted_ecef_position = clamped_ecef_position + spring_displacement;
+
+        state[0] = adjusted_ecef_position.x() / STATE_FACTOR[0];
+        state[1] = adjusted_ecef_position.y() / STATE_FACTOR[1];
+        state[2] = adjusted_ecef_position.z() / STATE_FACTOR[2];
 
         // record new position in various coordinates
         node.update_estimated_position();
@@ -318,9 +348,12 @@ impl Simulation {
 
         // Set up the initial state of the Kalman filter for each node. Note that all nodes follow the same state and observation models!
         let state_model = StationaryStateModel::new(
-            self.model_position_variance,
-            self.model_beta_variance,
-            self.model_tau_variance,
+            1.0,
+            10.0,
+            10.0,
+            // self.model_position_variance,
+            // self.model_beta_variance,
+            // self.model_tau_variance,
             STATE_FACTOR,
         );
         let observation_model_generator = NonlinearObservationModel::new();
