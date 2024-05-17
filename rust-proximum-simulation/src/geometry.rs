@@ -2,6 +2,7 @@ use h3o::{CellIndex, LatLng, Resolution};
 use rand::Rng;
 use std::f64::consts::PI;
 extern crate nav_types;
+use log::{info, trace};
 use nav_types::{ECEF, ENU, WGS84};
 use rand::thread_rng;
 use rand_distr::Distribution;
@@ -18,6 +19,7 @@ pub fn h3_to_ecef(h3_index: CellIndex) -> ECEF<f64> {
 // Convert an ECEF position to an H3 index
 pub fn ecef_to_h3(position: ECEF<f64>, resolution: Resolution) -> CellIndex {
     let wgs84 = WGS84::from(position);
+    trace!("ecef_position: {:#?}, wgs84 latlng: {:#?}", position, wgs84);
     let lat_lng = LatLng::from_radians(wgs84.latitude_radians(), wgs84.longitude_radians())
         .expect("invalid position");
     let cell = lat_lng.to_cell(resolution);

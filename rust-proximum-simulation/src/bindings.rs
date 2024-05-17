@@ -36,6 +36,10 @@ pub fn simulate(
     modelTauVariance: f64,
     modelTofObservationVariance: f64,
 ) -> String {
+    // some helpful instrumentation for JS work.
+    init_logger();
+    console_error_panic_hook::set_once();
+
     let mut simulation = Simulation::new(
         nNodes,
         nEpochs,
@@ -55,9 +59,6 @@ pub fn simulate(
         modelTauVariance,
         modelTofObservationVariance,
     );
-    // some helpful instrumentation for JS work.
-    init_logger();
-    console_error_panic_hook::set_once();
     simulation.run_simulation();
 
     let json = serde_json::to_string(&simulation).unwrap();

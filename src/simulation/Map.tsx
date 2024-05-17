@@ -68,7 +68,7 @@ const Map = () => {
       // max node latency: convert µs to seconds
       simulationParams.tau[1] * 1e-6,
       // latency per-measurement variance: convert std dev to variance
-      simulationParams.tauStddev ** 2,
+      (simulationParams.tauStddev * 1e-6) ** 2,
       // convert km to meters
       simulationParams.messageDistanceMax * 1000,
       // model position state variance: convert km stdev to m variance

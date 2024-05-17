@@ -1,6 +1,9 @@
 use crate::geometry::{ecef_to_h3, h3_to_ecef, normal_neighbor_index, uniform_h3_index};
 extern crate nav_types;
-use crate::kalman::{NonlinearObservationModel, StationaryStateModel, N_MEASUREMENTS, SS};
+use crate::kalman::{
+    normalize_state, NonlinearObservationModel, StationaryStateModel, N_MEASUREMENTS, SS,
+    STATE_FACTOR,
+};
 use crate::physics::generate_measurements;
 use crate::types::{Node, Simulation, Stats};
 use adskalman::{KalmanFilterNoControl, StateAndCovariance};
@@ -12,6 +15,7 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use rand::Rng;
 
+#[derive(PartialEq)]
 enum PositionType {
     Estimated,
     Asserted,
@@ -27,6 +31,13 @@ fn calculate_rms_error(nodes: &[Node], position_type: PositionType) -> f64 {
         };
         let squared_diff = diff.norm().powi(2);
         squared_diff_sum += squared_diff;
+
+        if position_type == PositionType::Estimated {
+            info!(
+                "node true position: {:#?}, asserted pos: {:#?}, est position: {:#?}, squared diff: {}",
+                node.true_position,node.asserted_position, node.estimated_position, squared_diff
+            );
+        }
     }
 
     let rms_error = squared_diff_sum / nodes.len() as f64;
@@ -52,9 +63,45 @@ impl Node {
         let true_position = h3_to_ecef(true_index);
         let asserted_position = h3_to_ecef(asserted_index);
 
-        let mut covariance = OMatrix::<f64, SS, SS>::identity() * model_position_variance;
-        covariance[(3, 3)] = model_beta_variance;
-        covariance[(4, 4)] = model_tau_variance;
+        // start with the asserted position and generic channel speed & latency parameters as a reasonable guess
+        let state = OVector::<f64, SS>::new(
+            asserted_position.x(),
+            asserted_position.y(),
+            asserted_position.z(),
+            model_beta,
+            model_tau,
+        )
+        // convert normalized real units into internal units
+        .component_div(&STATE_FACTOR);
+
+        // convert from normalized real units to internal numbers
+        let state_covariance_diagonal = OVector::<f64, SS>::new(
+            model_position_variance,
+            model_position_variance,
+            model_position_variance,
+            model_beta_variance,
+            model_tau_variance,
+        )
+        .zip_map(&STATE_FACTOR, |a, b| a / (b * b));
+
+        let covariance = OMatrix::<f64, SS, SS>::from_diagonal(&state_covariance_diagonal);
+        // let covariance = OMatrix::<f64, SS, SS>::identity() * 0.01;
+
+        info!("id: {}, beta: {}, tau: {}, model_position_variance: {}, model_beta: {}, model_beta_variance: {}, model_tau: {}, model_tau_variance: {}",
+          id,
+          beta,
+          tau,
+          model_position_variance,
+          model_beta,
+          model_beta_variance,
+          model_tau,
+          model_tau_variance,
+        );
+
+        info!(
+            "Initial state: {:#?}, initial state covariance: {:#?}",
+            state, covariance
+        );
 
         Node {
             id,
@@ -73,29 +120,19 @@ impl Node {
             asserted_wgs84: WGS84::from(asserted_position),
             channel_speed: beta,
             latency: tau,
-            state_and_covariance: StateAndCovariance::new(
-                // start with the asserted position and generic channel speed & latency parameters as a reasonable guess
-                OVector::<f64, SS>::new(
-                    asserted_position.x(),
-                    asserted_position.y(),
-                    asserted_position.z(),
-                    model_beta,
-                    model_tau,
-                ),
-                covariance,
-            ),
+            state_and_covariance: StateAndCovariance::new(state, covariance),
         }
     }
 
     fn update_estimated_position(&mut self) {
-        let state = self.state_and_covariance.state();
+        let state = normalize_state(self.state_and_covariance.state());
 
         // update positions in various reference frames
         let estimated_position = ECEF::new(state.x, state.y, state.z);
         self.estimated_position = estimated_position;
         self.estimated_wgs84 = WGS84::from(estimated_position);
+        // TODO: find source of NaNs eg with an ECEF of     [0.19173311262112122, -0.6806804671657253,-0.6952455384399419],
         self.estimated_index = ecef_to_h3(estimated_position, Resolution::try_from(10).unwrap());
-
         // get the variance in ECEF coordinates and project eigenvectors/values onto EN coordinates to plot confidence ellipse.
         let covariance = self.state_and_covariance.covariance();
         let ecef_covariance = covariance.view((0, 0), (3, 3));
@@ -177,10 +214,12 @@ impl Simulation {
         model_tau_variance: f64,
         model_tof_observation_variance: f64,
     ) -> Self {
+        info!("setting up simulation");
         let mut nodes: Vec<Node> = Vec::new();
         let resolution = Resolution::try_from(h3_resolution).expect("invalid H3 resolution");
 
-        for _ in 0..n_nodes {
+        for i in 0..n_nodes {
+            info!("creating node {}", i);
             // randomly place a node somewhere on the earth's surface
             let true_index = uniform_h3_index(resolution);
 
@@ -243,8 +282,6 @@ impl Simulation {
             self.message_distance_max,
             self.beta_variance,
             self.tau_variance,
-            self.model_beta,
-            self.model_tau,
         );
 
         let observation_model = observation_model_generator.linearize_at(
@@ -280,7 +317,12 @@ impl Simulation {
         info!("Running simulation: for {} epochs!", self.n_epochs);
 
         // Set up the initial state of the Kalman filter for each node. Note that all nodes follow the same state and observation models!
-        let state_model = StationaryStateModel::new(self.model_position_variance);
+        let state_model = StationaryStateModel::new(
+            self.model_position_variance,
+            self.model_beta_variance,
+            self.model_tau_variance,
+            STATE_FACTOR,
+        );
         let observation_model_generator = NonlinearObservationModel::new();
 
         let mut rng = thread_rng();

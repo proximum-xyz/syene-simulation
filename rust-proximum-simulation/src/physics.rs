@@ -8,14 +8,7 @@ use rand_distr::{LogNormal, Normal};
 
 pub const C: f64 = 299_792_458.0; // speed of light in m/s
 
-pub fn simulate_ping_pong_tof(
-    n1: &Node,
-    n2: &Node,
-    beta_variance: f64,
-    tau_variance: f64,
-    model_beta: f64,
-    model_tau: f64,
-) -> f64 {
+pub fn simulate_ping_pong_tof(n1: &Node, n2: &Node, beta_variance: f64, tau_variance: f64) -> f64 {
     // simulate a two-way time of flight measurement to another node
     // the measurement has a basic constant model for signal speed and node latency
     // but the actual time of flight depends on the variable signal speed and latency of the nodes
@@ -39,7 +32,8 @@ pub fn simulate_ping_pong_tof(
         beta_1 = beta_1_noise_dist.sample(&mut rng);
     }
 
-    let tau_1 = tau_1_noise_dist.sample(&mut rng);
+    // let tau_1 = tau_1_noise_dist.sample(&mut rng);
+    let tau_1 = 0.0;
 
     let beta_2_noise_dist = Normal::new(n2.channel_speed, beta_variance.powf(0.5))
         .expect("could not create normal distribution");
@@ -52,7 +46,8 @@ pub fn simulate_ping_pong_tof(
         beta_2 = beta_2_noise_dist.sample(&mut rng);
     }
 
-    let tau_2 = tau_2_noise_dist.sample(&mut rng);
+    // let tau_2 = tau_2_noise_dist.sample(&mut rng);
+    let tau_2 = 0.0;
 
     // Calculate the time taken for the ping
     let ping_time = true_distance / (C * beta_1) + tau_1;
@@ -63,17 +58,23 @@ pub fn simulate_ping_pong_tof(
     // Calculate the total time for the ping-pong round trip
     let total_time = ping_time + pong_time;
 
-    // Calculate the estimated distance based on the model parameters
-    let estimated_distance = (total_time / 2.0 - model_tau) * C * model_beta;
-
     trace!(
-        "true distance: {}, estimated distance, {}, % error {}",
-        true_distance,
-        estimated_distance,
-        (estimated_distance - true_distance) / true_distance
+        "beta_1: {}, tau_1: {}, ping_time: {}, beta_2: {}, tau_2: {}, pong_time: {}",
+        beta_1,
+        tau_1,
+        ping_time,
+        beta_2,
+        tau_2,
+        pong_time
     );
 
-    estimated_distance
+    trace!(
+        "true distance: {}, measured time, {}",
+        true_distance,
+        total_time,
+    );
+
+    total_time
 }
 
 // Simulate a bunch of real world measurements between node at one index and other nodes.
@@ -84,8 +85,6 @@ pub fn generate_measurements(
     message_distance_max: f64,
     beta_variance: f64,
     tau_variance: f64,
-    model_beta: f64,
-    model_tau: f64,
 ) -> (Vec<usize>, OVector<f64, OS>) {
     info!("Generating {} measurements", n_measurements);
 
@@ -129,14 +128,8 @@ pub fn generate_measurements(
             }
 
             // Simulate a trustless ping-pong time of flight measurement
-            let measured_tof = simulate_ping_pong_tof(
-                &node_a,
-                &node_b,
-                beta_variance,
-                tau_variance,
-                model_beta,
-                model_tau,
-            );
+            let measured_tof =
+                simulate_ping_pong_tof(&node_a, &node_b, beta_variance, tau_variance);
 
             break (their_index, measured_tof);
         };
@@ -145,5 +138,10 @@ pub fn generate_measurements(
         times[i] = time_of_flight;
     }
 
+    trace!(
+        "Generated measurements: indices {:#?}, times: {:#?}",
+        indices,
+        times
+    );
     (indices, times)
 }

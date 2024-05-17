@@ -10,7 +10,7 @@ type SimulationParamFields = {
 export const defaultSimulationParams: SimulationParams = {
   nNodes: 2,
   nMeasurements: 10,
-  nEpochs: 1,
+  nEpochs: 10,
   h3Resolution: 7,
   // km
   assertedPositionStddev: 100,
@@ -19,23 +19,23 @@ export const defaultSimulationParams: SimulationParams = {
   // %c
   betaStddev: 0.01,
   // µs
-  tau: [0, 0],
+  tau: [999, 1001],
   // µs
-  tauStddev: 0.01,
+  tauStddev: 1,
   // km
   messageDistanceMax: 13_000.0,
   // km
-  modelPositionStddev: 1,
+  modelPositionStddev: 100,
   // %c
   modelBeta: 0.9,
   // %c
-  modelBetaStddev: 0.01,
+  modelBetaStddev: 0.1,
   // µs
   modelTau: 1000,
   // µs
   modelTauStddev: 1000,
   // µs
-  modelTofObservationStddev: 1
+  modelTofObservationStddev: 1000
 };
 
 
@@ -156,9 +156,9 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
         <FormField name='modelPositionStddev' control={control} watch={watch} options={{ min: 0.0, step: 0.001 }} />
         <FormField name='modelBeta' control={control} watch={watch} options={{ min: 0, max: 1, step: 0.01 }} />
         <FormField name='modelBetaStddev' control={control} watch={watch} options={{ min: 0, max: 0.5, step: 0.01 }} />
-        <FormField name='modelTau' control={control} watch={watch} options={{ min: 0, max: 30000 }} />
-        <FormField name='modelTauStddev' control={control} watch={watch} options={{ min: 0, max: 10000 }} />
-        <FormField name='modelTofObservationStddev' control={control} watch={watch} options={{ min: 0.0, max: 10000, step: 1 }} />
+        <FormField name='modelTau' control={control} watch={watch} options={{ min: 0, max: 100000 }} />
+        <FormField name='modelTauStddev' control={control} watch={watch} options={{ min: 0, max: 100000 }} />
+        <FormField name='modelTofObservationStddev' control={control} watch={watch} options={{ min: 0.0, step: 1 }} />
 
         {isSimulating ? <ProgressIndicator /> : <Button type="submit" disabled={isSimulating}>Simulate</Button>}
 
