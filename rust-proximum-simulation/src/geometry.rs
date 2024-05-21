@@ -2,6 +2,7 @@ use h3o::{CellIndex, LatLng, Resolution};
 use rand::Rng;
 use std::f64::consts::PI;
 extern crate nav_types;
+use log::trace;
 use nav_types::{ECEF, ENU, WGS84};
 use rand::thread_rng;
 use rand_distr::Distribution;
@@ -18,24 +19,12 @@ pub fn h3_to_ecef(h3_index: CellIndex) -> ECEF<f64> {
 // Convert an ECEF position to an H3 index
 pub fn ecef_to_h3(position: ECEF<f64>, resolution: Resolution) -> CellIndex {
     let wgs84 = WGS84::from(position);
+    trace!("ecef_position: {:#?}, wgs84 latlng: {:#?}", position, wgs84);
     let lat_lng = LatLng::from_radians(wgs84.latitude_radians(), wgs84.longitude_radians())
         .expect("invalid position");
     let cell = lat_lng.to_cell(resolution);
     cell
 }
-
-// Clamp ECEF coordinates to the surface of the WGS84 ellipsoid
-// This is an approximation only suitable for the earth's surface
-// TODO: simplify? Should this be a constraint within the state / meas model?
-// pub fn clamp_ecef_to_ellipsoid(ecef_coords: ECEF<f64>) -> ECEF<f64> {
-//     let lat_lng = WGS84::from(ecef_coords);
-//     let lat_lng_clamped = WGS84::from_radians_and_meters(
-//         lat_lng.latitude_radians(),
-//         lat_lng.longitude_radians(),
-//         0.0,
-//     );
-//     lat_lng_clamped.into()
-// }
 
 // get a random H3 index drawing from a uniform distribution over the earth's surface
 pub fn uniform_h3_index(resolution: Resolution) -> CellIndex {

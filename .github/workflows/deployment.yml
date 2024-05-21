@@ -8,7 +8,6 @@ on:
 env:
   AWS_REGION: us-east-1
   AWS_BUCKET: syene.proximum.xyz
-  CLOUDFRONT_DISTRIBUTION_ID: a1234
 
 jobs:
   deploy:
@@ -30,9 +29,18 @@ jobs:
 
       - name: Install Rust toolchain
         run: |
+          rustup update
           rustup target add wasm32-unknown-unknown
+      
+      - name: Install wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          cd rust-proximum-simulation && cargo clean
 
-      - name: Install dependencies
+      - name: Compile Rust to WASM
+        run: npm run compile-wasm
+
+      - name: Install dependencies (including Rust dependencies)
         run: npm install
 
       - name: Build the project
@@ -51,4 +59,4 @@ jobs:
 
       - name: Create CloudFront invalidation
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"

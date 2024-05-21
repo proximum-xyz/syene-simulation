@@ -25,15 +25,12 @@ const ModalContent = styled.div`
   width: 100%;
   max-height: 80vh;
   overflow-y: auto;
+  margin-bottom: 100px;
 `;
 
 const Title = styled.h2`
   margin-top: 0;
   color: ${COLORS.green}
-`;
-
-const Description = styled.p`
-  margin-bottom: 20px;
 `;
 
 const CloseButton = styled.button`

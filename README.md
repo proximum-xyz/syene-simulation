@@ -17,9 +17,8 @@ The interesting stuff all happens in Rust:
 See the [Proximum Lightpaper](https://proximum.xyz/proximum-lightpaper.pdf) for more background information.
 
 ## Development
-* Install [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+* Install [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm), [Rust](https://www.rust-lang.org/tools/install), [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
 * Install JS dependencies: `npm install`
-* install [Rust](https://www.rust-lang.org/tools/install) and [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) 
 * Install Rust dependencies and compile the Rust to WASM: `npm run compile-wasm`
 * Run the dev server: `npm start`
 * Try the app at `localhost:3000`

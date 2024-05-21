@@ -21,35 +21,44 @@ pub fn simulate(
     nNodes: usize,
     nEpochs: usize,
     h3Resolution: i32,
-    realAssertedPositionVariance: f64,
-    realChannelSpeedMin: f64,
-    realChannelSpeedMax: f64,
-    realLatencyMin: f64,
-    realLatencyMax: f64,
-    modelDistanceMax: f64,
-    modelStateVariance: f64,
-    modelMeasurementVariance: f64,
-    modelSignalSpeedFraction: f64,
-    modelNodeLatency: f64,
+    assertedPositionVariance: f64,
+    betaMin: f64,
+    betaMax: f64,
+    betaVariance: f64,
+    tauMin: f64,
+    tauMax: f64,
+    tauVariance: f64,
+    messageDistanceMax: f64,
+    modelPositionVariance: f64,
+    modelBeta: f64,
+    modelBetaVariance: f64,
+    modelTau: f64,
+    modelTauVariance: f64,
+    modelTofObservationVariance: f64,
 ) -> String {
+    // some helpful instrumentation for JS work.
+    init_logger();
+    console_error_panic_hook::set_once();
+
     let mut simulation = Simulation::new(
         nNodes,
         nEpochs,
         h3Resolution,
-        realAssertedPositionVariance,
-        realChannelSpeedMin,
-        realChannelSpeedMax,
-        realLatencyMin,
-        realLatencyMax,
-        modelDistanceMax,
-        modelStateVariance,
-        modelMeasurementVariance,
-        modelSignalSpeedFraction,
-        modelNodeLatency,
+        assertedPositionVariance,
+        betaMin,
+        betaMax,
+        betaVariance,
+        tauMin,
+        tauMax,
+        tauVariance,
+        messageDistanceMax,
+        modelPositionVariance,
+        modelBeta,
+        modelBetaVariance,
+        modelTau,
+        modelTauVariance,
+        modelTofObservationVariance,
     );
-    // some helpful instrumentation for JS work.
-    init_logger();
-    console_error_panic_hook::set_once();
     simulation.run_simulation();
 
     let json = serde_json::to_string(&simulation).unwrap();
