@@ -1,58 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Polygon } from 'react-leaflet';
+import React from 'react';
+import { CircleMarker, Marker, Polyline, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import Ellipse, { EllipseProps } from './LeafletEllipse';
-import init, { simulate, InitOutput } from 'rust-proximum-simulation';
-import { COLORS, Simulation, SimulationParams } from '../types';
-import SimulationOverlay from './SimulationOverlay';
+import { COLORS } from '../types';
 import NodeDescriptionPopup, { POSITION_TYPE } from './NodeDescriptionPopup';
 import { cellToBoundary } from 'h3-js';
 import { rad2deg } from '../utils';
+import { Node } from '../types';
 
+export const SimulationMapContent = ({ nodes }: { nodes: Node[] | undefined }) => {
 
-
-const Map = () => {
-  const [simulation, setSimulation] = useState<Simulation>();
-
-  // initialize WASM
-  const [wasm, setWasm] = useState<InitOutput>();
-
-  useEffect(() => {
-    (async () => {
-      setWasm(await init());
-    })()
-  }, []);
-
-  function runSimulation(simulationParams: SimulationParams) {
-    const simString = simulate(
-      simulationParams.nNodes,
-      simulationParams.nEpochs,
-      simulationParams.h3Resolution,
-      simulationParams.assertedPositionVariance,
-      simulationParams.betaMin,
-      simulationParams.betaMax,
-      simulationParams.betaVariance,
-      simulationParams.tauMin,
-      simulationParams.tauMax,
-      simulationParams.tauVariance,
-      simulationParams.messageDistanceMax,
-      simulationParams.modelPositionVariance,
-      simulationParams.modelBeta,
-      simulationParams.modelBetaVariance,
-      simulationParams.modelTau,
-      simulationParams.modelTauVariance,
-      simulationParams.modelTofObservationVariance,
-    );
-
-    const sim = JSON.parse(simString);
-    setSimulation(sim);
-
-    console.log('***', { sim });
-
+  if (!nodes || nodes.length == 0) {
+    return null;
   }
 
-  const nodeContent = (simulation && simulation.nodes.length > 0) ? simulation.nodes.map((node, i) => {
+  const content = nodes.map((node, i) => {
     // asserted H3 index
     const assertedPolygonBoundary = cellToBoundary(node.asserted_index);
     const trueLatLngDeg = [node.true_wgs84.latitude, node.true_wgs84.longitude].map(rad2deg) as [number, number];
@@ -90,7 +53,7 @@ const Map = () => {
         </Ellipse>
 
         {/* <GeodesicLine points={[trueLatLngDeg, assertedLatLngDeg]} options={{ color: "ff8c00" }} />
-        <GeodesicLine points={[trueLatLngDeg, estLatLngDeg]} options={{ color: COLORS.blue }} /> */}
+          <GeodesicLine points={[trueLatLngDeg, estLatLngDeg]} options={{ color: COLORS.blue }} /> */}
         <Marker position={trueLatLngDeg} icon={L.divIcon({
           className: 'leaflet-custom-marker',
           html: `<div>${i}</div>`,
@@ -101,31 +64,11 @@ const Map = () => {
         </Marker>
       </React.Fragment >
     );
-  }) : null;
+  })
 
   return (
     <>
-      <MapContainer center={[0, 0]} zoom={3} zoomControl={false} style={{ position: 'absolute', top: 0, left: 0, height: '100vh', width: '100%' }}>
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          // attribution="&copy; OpenStreetMap contributors &copy; CARTO"
-          subdomains='abcd'
-          minZoom={1}
-          maxZoom={20}
-          noWrap={true}
-        />
-
-        {nodeContent}
-
-        {wasm && <SimulationOverlay
-          runSimulation={runSimulation}
-          simulation={simulation}
-          wasm={wasm}
-        />}
-      </MapContainer >
-
+      {content}
     </>
-  );
-};
-
-export default Map;
+  )
+}

@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import SimulationForm from './SimulationForm';
 import Stats from './Stats';
-import { CompilerParams, Simulation, SimulationParams } from '../types';
+import { CompilerParams, PATHS, Simulation, SimulationParams } from '../types';
 import { InitOutput, get_compile_parameters } from 'rust-proximum-simulation';
-import IntroModal from './IntroModal';
+import IntroModal from '../WelcomeModal';
+import { useNavigate } from 'react-router-dom';
 
 
 const HomeLink = styled.a`
@@ -80,13 +81,13 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
   runSimulation,
   simulation,
 }) => {
-
-  const [showIntroModal, setShowIntroModal] = useState(true);
   const [isFormCollapsed, setIsFormCollapsed] = useState(false);
   const [isStatsCollapsed, setIsStatsCollapsed] = useState(false);
 
   // Get the compiler params once
   const [compilerParams, setCompilerParams] = useState<CompilerParams>();
+
+  const navigate = useNavigate();
 
   // Save compiler params
   useEffect(() => {
@@ -94,17 +95,14 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
     setCompilerParams(JSON.parse(paramString));
   }, []);
 
-  const home = <HomeLink href="https://proximum.xyz">ᚼ</HomeLink>
-
-  const intro = showIntroModal ? (
-    <OverlayWrapper>
-      <IntroModal onClose={() => { setShowIntroModal(false) }} />
-    </OverlayWrapper>
-  ) : null;
+  const home = <HomeLink onClick={() => {
+    console.log('***', {});
+    navigate(PATHS.home);
+  }}>ᚼ</HomeLink>
 
   const form = () => {
 
-    if (!compilerParams || showIntroModal) return null;
+    if (!compilerParams) return null;
 
     return (
       <Column>
@@ -141,7 +139,6 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
   return (
     <OverlayWrapper>
       {home}
-      {intro}
       {form()}
       {stats()}
     </OverlayWrapper >

@@ -22,5 +22,3 @@ See the [Proximum Lightpaper](https://proximum.xyz/proximum-lightpaper.pdf) for 
 * Install Rust dependencies and compile the Rust to WASM: `npm run compile-wasm`
 * Run the dev server: `npm start`
 * Try the app at `localhost:3000`
-
-

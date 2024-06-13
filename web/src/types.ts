@@ -1,3 +1,9 @@
+export enum PATHS {
+  home = '/',
+  simulation = 'simulation',
+  register = 'register'
+}
+
 export interface WGS84 {
   latitude: number;
   longitude: number;
@@ -7,7 +13,7 @@ export interface WGS84 {
 export enum COLORS {
   green = "#00ff9f",
   blue = "#00b8ff",
-  orange = "#ff8c00",
+  orange = "#ff4f00",
   pink = "#ff0060",
   purple = "#8b00ff"
 }
