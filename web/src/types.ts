@@ -15,7 +15,9 @@ export enum COLORS {
   blue = "#00b8ff",
   orange = "#ff4f00",
   pink = "#ff0060",
-  purple = "#8b00ff"
+  purple = "#8b00ff",
+  grey = "#808080",
+  white = "#ffffff"
 }
 
 export interface CompilerParams {
@@ -25,27 +27,31 @@ export interface CompilerParams {
 export interface Node {
   id: number;
   true_index: number;
-  asserted_index: string;
-  estimated_index: string;
   true_position: [number, number, number];
-  asserted_position: [number, number, number];
-  estimated_position: [number, number, number];
-  estimated_beta: number,
-  estimated_tau: number,
-  estimation_variance: [number, number, number];
-  en_variance_semimajor_axis: [number, number],
-  en_variance_semiminor_axis: [number, number],
-  en_variance_semimajor_axis_length: number,
-  en_variance_semiminor_axis_length: number,
   true_wgs84: WGS84;
-  estimated_wgs84: WGS84;
+  true_beta: number;
+  true_tau: number;
+  asserted_index: string;
+  asserted_position: [number, number, number];
   asserted_wgs84: WGS84;
-  beta: number;
-  tau: number;
+  ls_estimated_index: string;
+  ls_estimated_position: [number, number, number];
+  ls_estimated_wgs84: WGS84;
+  kf_estimated_index: string;
+  kf_estimated_position: [number, number, number];
+  kf_estimated_wgs84: WGS84;
+  kf_estimated_beta: number,
+  kf_estimated_tau: number,
+  kf_estimation_variance: [number, number, number];
+  kf_en_variance_semimajor_axis: [number, number],
+  kf_en_variance_semiminor_axis: [number, number],
+  kf_en_variance_semimajor_axis_length: number,
+  kf_en_variance_semiminor_axis_length: number,
 }
 
 export interface Stats {
-  estimation_rms_error: number[];
+  ls_estimation_rms_error: number[];
+  kf_estimation_rms_error: number[];
   assertion_rms_error: number[];
 }
 
@@ -129,13 +135,15 @@ export interface Simulation {
   asserted_position_variance: number;
   beta_min: number;
   beta_max: number;
+  beta_variance: number,
   tau_min: number;
   tau_max: number;
+  tau_variance: number;
   message_distance_max: number;
-  model_position_variance: number;
-  model_tof_observation_variance: number;
-  model_beta: number;
-  model_tau: number;
+  kf_model_position_variance: number;
+  kf_model_tof_observation_variance: number;
+  kf_model_beta: number;
+  kf_model_tau: number;
   nodes: Node[];
   stats: Stats,
 }

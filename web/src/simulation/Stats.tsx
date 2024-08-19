@@ -12,9 +12,9 @@ import {
 import { COLORS, Simulation } from '../types';
 import styled from 'styled-components';
 
-export interface SimulationStats {
-  rmsError: number;
-}
+// export interface SimulationStats {
+//   rmsError: number;
+// }
 
 const StatsContainer = styled.div`
 background-color: #1f1f1fdd;
@@ -30,12 +30,13 @@ const StatsTitle = styled.h2`
 
 const Stats = ({ stats }: { stats: Simulation['stats'] }) => {
   const data = [];
-  for (let i = 0; i < stats.estimation_rms_error.length; i++) {
+  for (let i = 0; i < stats.kf_estimation_rms_error.length; i++) {
     data.push({
       epoch: i,
       // convert from m to km
-      rmsError: stats.estimation_rms_error[i] / 1000,
-      assertionStddev: stats.assertion_rms_error[i] / 1000,
+      kfError: stats.kf_estimation_rms_error[i] / 1000,
+      lsError: stats.ls_estimation_rms_error[i] / 1000,
+      assertedError: stats.assertion_rms_error[i] / 1000,
     });
   }
 
@@ -62,17 +63,25 @@ const Stats = ({ stats }: { stats: Simulation['stats'] }) => {
           {/* <Legend wrapperStyle={{ color: '#fff' }} /> */}
           <Line
             type="monotone"
-            dataKey="rmsError"
-            stroke="#00b8ff"
-            name="Estimation"
+            dataKey="kfError"
+            stroke={COLORS.blue}
+            name="Kalman Filter Err."
             dot={{ fill: '#333' }}
           // activeDot={{ fill: '#00b8ff', stroke: '#00b8ff', strokeWidth: 2, r: 6 }}
           />
           <Line
             type="monotone"
-            dataKey="assertionStddev"
+            dataKey="lsError"
+            stroke={COLORS.green}
+            name="Least Squares Err."
+            dot={{ fill: '#333' }}
+          // activeDot={{ fill: '#00b8ff', stroke: '#00b8ff', strokeWidth: 2, r: 6 }}
+          />
+          <Line
+            type="monotone"
+            dataKey="assertedError"
             stroke={COLORS.pink}
-            name="Assertion"
+            name="Asserted Position Err."
             dot={{ fill: '#00000000', radius: 0, stroke: "#00000000" }}
           />
         </LineChart>

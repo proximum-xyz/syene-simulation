@@ -40,13 +40,13 @@ export enum POSITION_TYPE {
 
 const formatState = (node: Node) => (
   `
-Latitude: ${rad2deg(node.true_wgs84.latitude).toFixed(2)}° (Est: ${rad2deg(node.estimated_wgs84.latitude).toFixed(2)}°)
+Latitude: ${rad2deg(node.true_wgs84.latitude).toFixed(2)}° (Est: ${rad2deg(node.kf_estimated_wgs84.latitude).toFixed(2)}°)
 
-Longitude: ${rad2deg(node.true_wgs84.longitude).toFixed(2)}° (Est: ${rad2deg(node.estimated_wgs84.longitude).toFixed(2)}°)
+Longitude: ${rad2deg(node.true_wgs84.longitude).toFixed(2)}° (Est: ${rad2deg(node.kf_estimated_wgs84.longitude).toFixed(2)}°)
 
-β: ${node.beta.toFixed(2)} c (Est: ${node.estimated_beta.toFixed(2)} c)
+β: ${node.true_beta.toFixed(2)} c (Est: ${node.kf_estimated_beta.toFixed(2)} c)
 
-τ: ${(node.tau * 1000).toFixed(2)} ms (Est: ${(node.estimated_tau * 1000).toFixed(2)} ms)
+τ: ${(node.true_tau * 1000).toFixed(2)} ms (Est: ${(node.kf_estimated_tau * 1000).toFixed(2)} ms)
 `
 )
 
@@ -82,7 +82,7 @@ Asserted Position Error: ${distanceKm(node.true_position, node.asserted_position
       body = `
 ${formatState(node)}
 
-Position Error: ${distanceKm(node.true_position, node.estimated_position)} km
+Position Error: ${distanceKm(node.true_position, node.kf_estimated_position)} km
 `;
       break;
     }
@@ -91,7 +91,7 @@ Position Error: ${distanceKm(node.true_position, node.estimated_position)} km
       body = `
 ${formatState(node)}
 
-Position Error: ${distanceKm(node.true_position, node.estimated_position)} km
+Position Error: ${distanceKm(node.true_position, node.kf_estimated_position)} km
 `;
       break;
     }

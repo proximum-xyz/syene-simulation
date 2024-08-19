@@ -80,7 +80,7 @@ const WelcomeModal: React.FC = () => {
         <p>
           Check out the <Link href="https://proximum.xyz/proximum-lightpaper.pdf">Lightpaper</Link> or <Link href="https://github.com/proximum-xyz/syene-simulation">Github</Link> to learn more.
         </p>
-        <RegisterButton onClick={handleRegisterClick}>Register a Node</RegisterButton>
+        {/* <RegisterButton onClick={handleRegisterClick}>Register a Node</RegisterButton> */}
         <SimulateButton onClick={handleSimulateClick}>Simulate the Network</SimulateButton>
       </ModalContent>
     </ModalWrapper>

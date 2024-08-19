@@ -1,9 +1,10 @@
-use adskalman::{ObservationModel, TransitionModelLinearNoControl};
+use adskalman::{KalmanFilterNoControl, ObservationModel, StateAndCovariance, TransitionModelLinearNoControl};
 use log::trace;
 use nalgebra::DimName;
 use nalgebra::{
     allocator::Allocator, Const, DefaultAllocator, DimMin, OMatrix, OVector, RealField,
 };
+use nav_types::{ECEF, WGS84};
 
 use crate::physics::C;
 use crate::types::Node;
@@ -70,7 +71,7 @@ where
         beta_variance: R,
         tau_variance: R,
         // passed in to infer type
-        state_factor: OVector<R, SS>,
+        _state_factor: OVector<R, SS>,
     ) -> Self {
         let transition_model = OMatrix::<R, SS, SS>::identity();
 
@@ -127,8 +128,8 @@ impl NonlinearObservationModel {
         &self,
         nodes: &Vec<Node>,
         my_index: usize,
-        their_indices: Vec<usize>,
-        observation_noise_covariance: f64,
+        their_indices: &Vec<usize>,
+        _observation_noise_covariance: f64,
     ) -> LinearizedObservationModel {
         // Create a new matrix representing positions of the other nodes used in this observation.
         // This is a fixed size matrix with the number of rows equal to the number of measurements
@@ -137,7 +138,7 @@ impl NonlinearObservationModel {
         for i in 0..OS::dim() {
             // we do our distance calculations in real units, so normalize from internal to real units
             let their_normalized_state = normalize_state(nodes[their_indices[i]]
-                .state_and_covariance
+                .kf_state_and_covariance
                 .state());
             their_normalized_states
                 .view_mut((0, i), (5, 1))
@@ -167,7 +168,7 @@ impl NonlinearObservationModel {
             y
         });
 
-        let normalized_state = normalize_state(nodes[my_index].state_and_covariance.state());
+        let normalized_state = normalize_state(nodes[my_index].kf_state_and_covariance.state());
         let mut observation_matrix = OMatrix::<f64, OS, SS>::zeros();
 
         for i in 0..OS::dim() {
@@ -248,4 +249,68 @@ where
     fn predict_observation(&self, state: &OVector<Precision, SS>) -> OVector<Precision, OS> {
         (*self.evaluation_func)(state)
     }
+}
+
+// Update the estimated position of a specific node based on new measurements using the Kalman filter
+pub fn kf_step(
+  index: usize,
+  measurements: &(Vec<usize>, OVector<f64, OS>),
+  nodes: &Vec<Node>,
+  observation_model_generator: &NonlinearObservationModel,
+  state_model: &StationaryStateModel<f64>,
+  kf_model_tof_observation_variance: f64,
+) -> StateAndCovariance<f64, SS>{
+  let node = &nodes[index];
+  let (their_indices, times) = measurements;
+  let observation_model = observation_model_generator.linearize_at(
+      &nodes,
+     node.id,
+      their_indices,
+      kf_model_tof_observation_variance,
+  );
+
+  trace!("built observation model");
+
+  let kf = KalmanFilterNoControl::new(state_model, &observation_model);
+
+  trace!("built kalman filter");
+
+  trace!("state before: {:#?}", node.kf_state_and_covariance);
+
+  let mut kf_state_and_covariance = kf
+      .step(&node.kf_state_and_covariance, &times)
+      .expect("bad kalman filter step");
+
+  trace!("state after: {:#?}", node.kf_state_and_covariance);
+
+  trace!("finished Kalman filter step. Now clamping state to earth's surface.");
+
+  let state = kf_state_and_covariance.state_mut();
+  let normalized_state = normalize_state(state);
+
+  let wgs84_position: WGS84<f64> = ECEF::new(
+      normalized_state[0],
+      normalized_state[1],
+      normalized_state[2],
+  )
+  .into();
+
+  let clamped_ecef_position: ECEF<f64> = WGS84::from_radians_and_meters(
+      wgs84_position.latitude_radians(),
+      wgs84_position.longitude_radians(),
+      0.0,
+  )
+  .into();
+
+  let spring_displacement = (node.asserted_position - clamped_ecef_position) / 500.0;
+
+  let adjusted_ecef_position = clamped_ecef_position + spring_displacement;
+
+  state[0] = adjusted_ecef_position.x() / STATE_FACTOR[0];
+  state[1] = adjusted_ecef_position.y() / STATE_FACTOR[1];
+  state[2] = adjusted_ecef_position.z() / STATE_FACTOR[2];
+
+  return kf_state_and_covariance;
+  // record new estimated position in various coordinate sysetems
+  
 }

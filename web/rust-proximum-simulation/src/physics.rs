@@ -1,147 +1,109 @@
 use crate::{kalman::OS, types::Node};
-use log::{info, trace};
+use log::trace;
 use nalgebra::OVector;
+use nav_types::ECEF;
 use rand::prelude::*;
-use rand::thread_rng;
-use rand_distr::Distribution;
-use rand_distr::{LogNormal, Normal};
+use rand_distr::LogNormal;
+use rand_distr::Normal;
+use std::error::Error;
 
 pub const C: f64 = 299_792_458.0; // speed of light in m/s
 
-pub fn simulate_ping_pong_tof(n1: &Node, n2: &Node, beta_variance: f64, tau_variance: f64) -> f64 {
-    // simulate a two-way time of flight measurement to another node
-    // the measurement has a basic constant model for signal speed and node latency
-    // but the actual time of flight depends on the variable signal speed and latency of the nodes
-    // * each measurement consists of a ping from node n1 to node n2 and a pong from node n2 to node n1.
-    // * the distance estimation models the time it would take for a ping and pong to occur using a fixed message transmission speed (% of c) and fixed latency (s) for each node to respond.
-    // * the actual time taken by the ping is determined by the message speed c * n1.beta plus n1.tau
-    // * the actual time taken by the pong is determined by the message speed c * n2.beta plus n2.latency
-    let true_distance = (n1.true_position - n2.true_position).norm();
+pub fn simulate_ping_pong_tof(
+    // n1: &Node,
+    true_position: ECEF<f64>,
+    true_beta: f64,
+    true_tau: f64,
+    n2: &Node,
+    beta_variance: f64,
+    tau_variance: f64,
+    rng: &mut impl Rng,
+) -> Result<f64, Box<dyn Error>> {
+    let true_distance = (true_position - n2.true_position).norm();
 
-    // Noise distributions for message speed and latency
-    let mut rng = thread_rng();
-    let beta_1_noise_dist = Normal::new(n1.beta, beta_variance.powf(0.5))
-        .expect("could not create normal distribution");
-    let tau_1_noise_dist = LogNormal::new(n1.tau.ln(), tau_variance.powf(0.5).ln())
-        .expect("could not create lognormal distribution");
+    let beta_dist = Normal::new(1.0, beta_variance.sqrt())?;
 
-    // ensure the speed is between 0 c and 1 c
-    let mut beta_1 = beta_1_noise_dist.sample(&mut rng);
-    while beta_1 <= 0.0 || beta_1 >= 1.0 {
-        trace!("beta 1 out of range");
-        beta_1 = beta_1_noise_dist.sample(&mut rng);
-    }
+    let beta_1 = beta_dist.sample(rng).clamp(0.0, 1.0) * true_beta;
+    let beta_2 = beta_dist.sample(rng).clamp(0.0, 1.0) * n2.true_beta;
 
-    // let tau_1 = tau_1_noise_dist.sample(&mut rng);
-    let tau_1 = 0.0;
+    let tau_1 = {
+        let tau_dist = LogNormal::new(true_tau.ln(), tau_variance.sqrt().ln())?;
+        tau_dist.sample(rng)
+    };
 
-    let beta_2_noise_dist = Normal::new(n2.beta, beta_variance.powf(0.5))
-        .expect("could not create normal distribution");
-    let tau_2_noise_dist = LogNormal::new(n2.tau.ln(), tau_variance.powf(0.5).ln())
-        .expect("could not create lognormal distribution");
+    let tau_2 = {
+        let tau_dist = LogNormal::new(n2.true_tau.ln(), tau_variance.sqrt().ln())?;
+        tau_dist.sample(rng)
+    };
 
-    let mut beta_2 = beta_2_noise_dist.sample(&mut rng);
-    while beta_2 <= 0.0 || beta_2 >= 1.0 {
-        trace!("beta 2 out of range");
-        beta_2 = beta_2_noise_dist.sample(&mut rng);
-    }
-
-    // let tau_2 = tau_2_noise_dist.sample(&mut rng);
-    let tau_2 = 0.0;
-
-    // Calculate the time taken for the ping
     let ping_time = true_distance / (C * beta_1) + tau_1;
-
-    // Calculate the time taken for the pong
     let pong_time = true_distance / (C * beta_2) + tau_2;
-
-    // Calculate the total time for the ping-pong round trip
     let total_time = ping_time + pong_time;
 
     trace!(
-        "beta_1: {}, tau_1: {}, ping_time: {}, beta_2: {}, tau_2: {}, pong_time: {}",
-        beta_1,
-        tau_1,
-        ping_time,
-        beta_2,
-        tau_2,
-        pong_time
-    );
+      "beta_1: {:.6}, tau_1: {:.9}, ping_time: {:.9}, beta_2: {:.6}, tau_2: {:.9}, pong_time: {:.9}",
+      beta_1,
+      tau_1,
+      ping_time,
+      beta_2,
+      tau_2,
+      pong_time
+  );
 
     trace!(
-        "true distance: {}, measured time, {}",
+        "true distance: {:.3}, measured time: {:.9}",
         true_distance,
         total_time,
     );
 
-    total_time
+    Ok(total_time)
 }
 
 // Simulate a bunch of real world measurements between node at one index and other nodes.
 pub fn generate_measurements(
-    my_index: usize,
+    true_position: ECEF<f64>,
+    true_beta: f64,
+    true_tau: f64,
+    my_node_index: Option<usize>,
     nodes: &[Node],
     n_measurements: usize,
     message_distance_max: f64,
     beta_variance: f64,
     tau_variance: f64,
-) -> (Vec<usize>, OVector<f64, OS>) {
-    trace!("Generating {} measurements", n_measurements);
-
+) -> Result<(Vec<usize>, OVector<f64, OS>), Box<dyn Error>> {
     let mut rng = rand::thread_rng();
 
-    let mut indices: Vec<usize> = Vec::new();
-    let mut times: OVector<f64, OS> = OVector::<f64, OS>::zeros();
+    let mut their_indices = Vec::with_capacity(n_measurements);
+    let mut times = Vec::with_capacity(n_measurements);
 
-    for i in 0..n_measurements {
-        // Randomly select two distinct nodes
-        trace!("Generating measurement {}/{}: ", i + 1, n_measurements);
-        let node_a = &nodes[my_index];
+    while their_indices.len() < n_measurements {
+        let their_node_index = (0..nodes.len())
+            .filter(|&i| Some(i) != my_node_index)
+            .collect::<Vec<_>>()
+            .choose(&mut rng)
+            .copied()
+            .unwrap();
 
-        let mut loop_counter = 0;
-        let (their_index, time_of_flight) = loop {
-            loop_counter += 1;
+        let distance = true_position.distance(&nodes[their_node_index].true_position);
 
-            let their_index = (0..nodes.len()).choose(&mut rng).unwrap();
-            if my_index == their_index {
-                trace!("Message to self (node {}), retrying", my_index);
-                continue;
-            };
+        if distance <= message_distance_max {
+            their_indices.push(their_node_index);
 
-            let node_b = &nodes[their_index];
-
-            if (node_a.true_position - node_b.true_position).norm() > message_distance_max {
-                trace!(
-                    "Nodes too far apart ({} m > max: {} m), retrying",
-                    (node_a.true_position - node_b.true_position).norm(),
-                    message_distance_max
-                );
-
-                if loop_counter > 1000 {
-                    info!(
-                      "Loop counter exceeded (too few close nodes), breaking, no measurement will be used for this update."
-                  );
-                    break (their_index, std::f64::NAN);
-                }
-                // TODO: handle special case where no nodes are close enough - currently this creates an infinite loop
-                continue;
-            }
-
-            // Simulate a trustless ping-pong time of flight measurement
-            let measured_tof =
-                simulate_ping_pong_tof(&node_a, &node_b, beta_variance, tau_variance);
-
-            break (their_index, measured_tof);
-        };
-
-        indices.push(their_index);
-        times[i] = time_of_flight;
+            // let beta = beta_dist.sample(&mut rng);
+            // let tau = tau_dist.sample(&mut rng);
+            // let time = distance / C * beta + tau;
+            // times.push(time);
+            times.push(simulate_ping_pong_tof(
+                true_position,
+                true_beta,
+                true_tau,
+                &nodes[their_node_index],
+                beta_variance,
+                tau_variance,
+                &mut rng,
+            )?)
+        }
     }
 
-    trace!(
-        "Generated measurements: indices {:#?}, times: {:#?}",
-        indices,
-        times
-    );
-    (indices, times)
+    Ok((their_indices, OVector::<f64, OS>::from_vec(times)))
 }

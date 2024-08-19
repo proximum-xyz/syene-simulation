@@ -22,7 +22,7 @@ code {
 .leaflet-custom-marker {
   color: white;
   background-color: #1f1f1f99;
-  border: 1px solid #00ff9f;
+  border: 1px solid white;
   border-radius: 50%;
   text-align: center;
   font-weight: bold;

@@ -15,9 +15,9 @@ const defaultSimulationParams = {
   // %c
   betaRange: [0.66, 0.99],
   // %c
-  betaStddev: 0.1,
+  betaStddev: 0.01,
   // ms
-  tauRange: [10, 30],
+  tauRange: [14, 16],
   // ms
   tauStddev: 1,
   // km
