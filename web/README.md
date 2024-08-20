@@ -2,7 +2,7 @@
 Simulate the location oracle provided by Proximum's Syene Testnet.
 
 ## Use
-Try it out at [syene.proximum.io](https://syene.proximum.io). Everything runs in your browser.
+Try it out at [syene.proximum.xyz](https://syene.proximum.xyz). Everything runs in your browser.
 
 ## How It Works
 This repo includes two components.
