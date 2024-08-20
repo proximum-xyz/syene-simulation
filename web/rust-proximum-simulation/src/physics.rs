@@ -23,18 +23,22 @@ pub fn simulate_ping_pong_tof(
 
     let beta_dist = Normal::new(1.0, beta_variance.sqrt())?;
 
-    let beta_1 = beta_dist.sample(rng).clamp(0.0, 1.0) * true_beta;
-    let beta_2 = beta_dist.sample(rng).clamp(0.0, 1.0) * n2.true_beta;
+    // let beta_1 = beta_dist.sample(rng).clamp(0.0, 1.0) * true_beta;
+    // let beta_2 = beta_dist.sample(rng).clamp(0.0, 1.0) * n2.true_beta;
+    let beta_1 = 1.0;
+    let beta_2 = 1.0;
+    let tau_1 = 0.0;
+    let tau_2 = 0.0;
 
-    let tau_1 = {
-        let tau_dist = LogNormal::new(true_tau.ln(), tau_variance.sqrt().ln())?;
-        tau_dist.sample(rng)
-    };
+    // let tau_1 = {
+    //     let tau_dist = LogNormal::new(true_tau.ln(), tau_variance.sqrt().ln())?;
+    //     tau_dist.sample(rng)
+    // };
 
-    let tau_2 = {
-        let tau_dist = LogNormal::new(n2.true_tau.ln(), tau_variance.sqrt().ln())?;
-        tau_dist.sample(rng)
-    };
+    // let tau_2 = {
+    //     let tau_dist = LogNormal::new(n2.true_tau.ln(), tau_variance.sqrt().ln())?;
+    //     tau_dist.sample(rng)
+    // };
 
     let ping_time = true_distance / (C * beta_1) + tau_1;
     let pong_time = true_distance / (C * beta_2) + tau_2;
@@ -59,7 +63,6 @@ pub fn simulate_ping_pong_tof(
     Ok(total_time)
 }
 
-// Simulate a bunch of real world measurements between node at one index and other nodes.
 pub fn generate_measurements(
     true_position: ECEF<f64>,
     true_beta: f64,
@@ -73,36 +76,43 @@ pub fn generate_measurements(
 ) -> Result<(Vec<usize>, OVector<f64, OS>), Box<dyn Error>> {
     let mut rng = rand::thread_rng();
 
-    let mut their_indices = Vec::with_capacity(n_measurements);
+    // Filter nodes within range and exclude the current node
+    let eligible_nodes: Vec<(usize, &Node)> = nodes
+        .iter()
+        .enumerate()
+        .filter(|&(i, node)| {
+            Some(i) != my_node_index
+                && true_position.distance(&node.true_position) <= message_distance_max
+        })
+        .collect();
+
+    if eligible_nodes.len() < n_measurements {
+        return Err(format!(
+            "Not enough eligible nodes. Found {} but need {}",
+            eligible_nodes.len(),
+            n_measurements
+        )
+        .into());
+    }
+
+    // Randomly select n_measurements unique nodes
+    let selected_nodes = eligible_nodes
+        .choose_multiple(&mut rng, n_measurements)
+        .collect::<Vec<_>>();
+
+    let their_indices: Vec<usize> = selected_nodes.iter().map(|&(i, _)| *i).collect();
     let mut times = Vec::with_capacity(n_measurements);
 
-    while their_indices.len() < n_measurements {
-        let their_node_index = (0..nodes.len())
-            .filter(|&i| Some(i) != my_node_index)
-            .collect::<Vec<_>>()
-            .choose(&mut rng)
-            .copied()
-            .unwrap();
-
-        let distance = true_position.distance(&nodes[their_node_index].true_position);
-
-        if distance <= message_distance_max {
-            their_indices.push(their_node_index);
-
-            // let beta = beta_dist.sample(&mut rng);
-            // let tau = tau_dist.sample(&mut rng);
-            // let time = distance / C * beta + tau;
-            // times.push(time);
-            times.push(simulate_ping_pong_tof(
-                true_position,
-                true_beta,
-                true_tau,
-                &nodes[their_node_index],
-                beta_variance,
-                tau_variance,
-                &mut rng,
-            )?)
-        }
+    for &(_, node) in &selected_nodes {
+        times.push(simulate_ping_pong_tof(
+            true_position,
+            true_beta,
+            true_tau,
+            node,
+            beta_variance,
+            tau_variance,
+            &mut rng,
+        )?);
     }
 
     Ok((their_indices, OVector::<f64, OS>::from_vec(times)))

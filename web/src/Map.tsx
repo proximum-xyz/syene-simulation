@@ -3,7 +3,7 @@ import { Routes, Route, Outlet } from 'react-router-dom';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import init, { simulate, InitOutput } from 'rust-proximum-simulation';
-import { PATHS, Simulation, SimulationParams } from './types';
+import { PATHS, Simulation, SimulationConfig } from './types';
 import SimulationOverlay from './simulation/SimulationOverlay';
 import { SimulationMapContent } from './simulation/SimulationMapContent';
 import WelcomeModal from './WelcomeModal';
@@ -21,26 +21,8 @@ const Map = () => {
     })()
   }, []);
 
-  function runSimulation(simulationParams: SimulationParams) {
-    const simString = simulate(
-      simulationParams.nNodes,
-      simulationParams.nEpochs,
-      simulationParams.h3Resolution,
-      simulationParams.assertedPositionVariance,
-      simulationParams.betaMin,
-      simulationParams.betaMax,
-      simulationParams.betaVariance,
-      simulationParams.tauMin,
-      simulationParams.tauMax,
-      simulationParams.tauVariance,
-      simulationParams.messageDistanceMax,
-      simulationParams.modelPositionVariance,
-      simulationParams.modelBeta,
-      simulationParams.modelBetaVariance,
-      simulationParams.modelTau,
-      simulationParams.modelTauVariance,
-      simulationParams.modelTofObservationVariance,
-    );
+  function runSimulation(simulationConfig: SimulationConfig) {
+    const simString = simulate(simulationConfig);
 
     const sim = JSON.parse(simString);
     setSimulation(sim);

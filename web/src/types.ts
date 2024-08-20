@@ -56,43 +56,44 @@ export interface Stats {
 }
 
 // These are the parameters we set for a new simulation
-export interface SimulationParams {
-  // preset by compiler
-  nMeasurements: number,
-
+export interface SimulationConfig {
   // we define these
   // number of nodes in the simulation
-  nNodes: number;
+  n_nodes: number;
   // number of times to run the kalman filter step
-  nEpochs: number;
+  n_epochs: number;
   // position resolution at which nodes assert location
-  h3Resolution: number;
+  h3_resolution: number;
   // accuracy at which nodes assert position (m^2)
-  assertedPositionVariance: number;
+  asserted_position_variance: number;
   // message speed range [min, max] as a fraction of c, the speed of light 
-  betaMin: number
-  betaMax: number
+  beta_min: number
+  beta_max: number
   // per-message message speed variance as a fraction of c
-  betaVariance: number
+  beta_variance: number
   // latency range [min, max] (µs)
-  tauMin: number
-  tauMax: number
+  tau_min: number
+  tau_max: number
   // per-message latency stddev (s^2)
-  tauVariance: number;
+  tau_variance: number;
   // max message range (m)
-  messageDistanceMax: number;
+  message_distance_max: number;
+  ls_model_beta: number;
+  ls_model_tau: number;
+  ls_tolerance: number;
+  ls_iterations: number;
   // model position state update varians (m^2)
-  modelPositionVariance: number;
+  kf_model_position_variance: number;
   // initial model for message speed: fraction of c
-  modelBeta: number;
+  kf_model_beta: number;
   // model message speed state update variance
-  modelBetaVariance: number;
+  kf_model_beta_variance: number;
   // initial model latency (s)
-  modelTau: number;
+  kf_model_tau: number;
   // model latency state update standard deviation
-  modelTauVariance: number;
+  kf_model_tau_variance: number;
   // model time of flight observation variance (s^2)
-  modelTofObservationVariance: number;
+  kf_model_tof_observation_variance: number;
 }
 
 // units are in km, ms, and std deviation

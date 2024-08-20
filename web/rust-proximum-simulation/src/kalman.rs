@@ -295,6 +295,10 @@ pub fn kf_step(
   )
   .into();
 
+  let lat_radians = wgs84_position.latitude_radians();
+  let lng_radians = wgs84_position.longitude_radians();
+  // info!("pos in kf update: {:#?}, lat_lng: {:#?}, {:#?}", wgs84_position, lat_radians, lng_radians);
+
   let clamped_ecef_position: ECEF<f64> = WGS84::from_radians_and_meters(
       wgs84_position.latitude_radians(),
       wgs84_position.longitude_radians(),

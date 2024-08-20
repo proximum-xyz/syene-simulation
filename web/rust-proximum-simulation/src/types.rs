@@ -37,7 +37,7 @@ pub struct CompilerParams {
     pub n_measurements: usize,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct Node {
     pub id: usize,
     #[serde(with = "serialize_h3_index")]

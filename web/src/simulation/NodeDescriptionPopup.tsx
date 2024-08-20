@@ -34,8 +34,9 @@ export enum POSITION_TYPE {
   true,
   asserted,
   assertedCell,
-  estimated,
-  estimatedEllipse
+  lsEstimated,
+  kfEstimated,
+  kfEstimatedEllipse
 }
 
 const formatState = (node: Node) => (
@@ -77,8 +78,17 @@ Asserted Position Error: ${distanceKm(node.true_position, node.asserted_position
 `;
       break;
     }
-    case POSITION_TYPE.estimated: {
-      title = `Node ${node.id}: estimated position`
+    case POSITION_TYPE.lsEstimated: {
+      title = `Node ${node.id}: least-squares estimated position`
+      body = `
+${formatState(node)}
+
+Position Error: ${distanceKm(node.true_position, node.ls_estimated_position)} km
+`;
+      break;
+    }
+    case POSITION_TYPE.kfEstimated: {
+      title = `Node ${node.id}: kalman filter estimated position`
       body = `
 ${formatState(node)}
 
@@ -86,8 +96,8 @@ Position Error: ${distanceKm(node.true_position, node.kf_estimated_position)} km
 `;
       break;
     }
-    case POSITION_TYPE.estimatedEllipse: {
-      title = `Node ${node.id}: estimated position 1σ ellipse`
+    case POSITION_TYPE.kfEstimatedEllipse: {
+      title = `Node ${node.id}: kalman filter estimated position 1σ ellipse`
       body = `
 ${formatState(node)}
 

@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import SimulationForm from './SimulationForm';
 import Stats from './Stats';
-import { CompilerParams, PATHS, Simulation, SimulationParams } from '../types';
+import { CompilerParams, PATHS, Simulation, SimulationConfig } from '../types';
 import { InitOutput, get_compile_parameters } from 'rust-proximum-simulation';
-import IntroModal from '../WelcomeModal';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -72,7 +71,7 @@ const Column2 = styled.div`
 `;
 
 interface SimulationOverlayProps {
-  runSimulation: (params: SimulationParams) => void;
+  runSimulation: (params: SimulationConfig) => void;
   simulation: Simulation | undefined;
   wasm: InitOutput;
 }

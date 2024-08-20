@@ -87,7 +87,7 @@ impl Node {
         }
     }
 
-    pub fn log_lf_estimated_positions(&mut self) {
+    pub fn log_ls_estimated_positions(&mut self) {
         let position = self.ls_estimated_position;
         self.ls_estimated_wgs84 = WGS84::from(position);
         self.ls_estimated_index = ecef_to_h3(position, Resolution::try_from(10).unwrap())

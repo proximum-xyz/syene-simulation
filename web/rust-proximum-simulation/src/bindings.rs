@@ -1,5 +1,8 @@
 #![allow(non_snake_case)]
-use crate::types::{Simulation, SimulationConfig};
+use crate::{
+    kalman::N_MEASUREMENTS,
+    types::{CompilerParams, Simulation, SimulationConfig},
+};
 use console_log::init_with_level;
 use log::LevelFilter;
 use serde_json;
@@ -22,8 +25,17 @@ pub fn simulate(js_config: JsValue) -> Result<String, JsValue> {
     let config: SimulationConfig = from_value(js_config).map_err(|e| e.to_string())?;
 
     let mut simulation = Simulation::new(config);
-    let _ = simulation.run_simulation();
+    let _ = simulation.run_simulation().map_err(|e| e.to_string())?;
 
     let json = serde_json::to_string(&simulation).unwrap();
     Ok(json)
+}
+
+#[wasm_bindgen]
+pub fn get_compile_parameters() -> String {
+    let parameters = CompilerParams {
+        n_measurements: N_MEASUREMENTS,
+    };
+    let json = serde_json::to_string(&parameters).unwrap();
+    json
 }

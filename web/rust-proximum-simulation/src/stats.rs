@@ -20,7 +20,9 @@ fn calculate_rms_error(nodes: &[Node], position_type: PositionType) -> f64 {
             PositionType::LsEstimated => node.true_position - node.ls_estimated_position,
             PositionType::Asserted => node.true_position - node.asserted_position,
         };
-        let squared_diff = diff.norm().powi(2);
+        // let squared_diff = diff.norm().powi(2);
+        // Only consider the E, N coordinates.
+        let squared_diff = diff.east().powi(2) + diff.north().powi(2);
         squared_diff_sum += squared_diff;
 
         if position_type == PositionType::KfEstimated {
