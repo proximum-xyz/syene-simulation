@@ -39,15 +39,15 @@ export enum POSITION_TYPE {
   kfEstimatedEllipse
 }
 
-const formatState = (node: Node) => (
+const formatState = (node: Node, positionType: POSITION_TYPE) => (
   `
-Latitude: ${rad2deg(node.true_wgs84.latitude).toFixed(2)}° (Est: ${rad2deg(node.kf_estimated_wgs84.latitude).toFixed(2)}°)
+Latitude: ${rad2deg(node.true_wgs84.latitude).toFixed(2)}° ${positionType === POSITION_TYPE.kfEstimated && `(Est: ${rad2deg(node.kf_estimated_wgs84.latitude).toFixed(2)}°)`}
 
-Longitude: ${rad2deg(node.true_wgs84.longitude).toFixed(2)}° (Est: ${rad2deg(node.kf_estimated_wgs84.longitude).toFixed(2)}°)
+Longitude: ${rad2deg(node.true_wgs84.longitude).toFixed(2)}° ${positionType === POSITION_TYPE.kfEstimated && `(Est: ${rad2deg(node.kf_estimated_wgs84.longitude).toFixed(2)}°)`}
 
-β: ${node.true_beta.toFixed(2)} c (Est: ${node.kf_estimated_beta.toFixed(2)} c)
+β: ${node.true_beta.toFixed(2)} c ${positionType === POSITION_TYPE.kfEstimated && `(Est: ${node.kf_estimated_beta.toFixed(2)} c)`}
 
-τ: ${(node.true_tau * 1000).toFixed(2)} ms (Est: ${(node.kf_estimated_tau * 1000).toFixed(2)} ms)
+τ: ${(node.true_tau * 1000).toFixed(2)} ms ${positionType === POSITION_TYPE.kfEstimated && `(Est: ${(node.kf_estimated_tau * 1000).toFixed(2)} ms)`}
 `
 )
 
@@ -60,7 +60,7 @@ const NodePopup = ({ node, positionType }: { node: Node, positionType: POSITION_
     case POSITION_TYPE.true: {
       title = `Node ${node.id}: true position`
       body = `
-${formatState(node)}
+${formatState(node, positionType)}
       `;
       break;
     }
@@ -81,7 +81,7 @@ Asserted Position Error: ${distanceKm(node.true_position, node.asserted_position
     case POSITION_TYPE.lsEstimated: {
       title = `Node ${node.id}: least-squares estimated position`
       body = `
-${formatState(node)}
+${formatState(node, positionType)}
 
 Position Error: ${distanceKm(node.true_position, node.ls_estimated_position)} km
 `;
@@ -90,7 +90,7 @@ Position Error: ${distanceKm(node.true_position, node.ls_estimated_position)} km
     case POSITION_TYPE.kfEstimated: {
       title = `Node ${node.id}: kalman filter estimated position`
       body = `
-${formatState(node)}
+${formatState(node, positionType)}
 
 Position Error: ${distanceKm(node.true_position, node.kf_estimated_position)} km
 `;
@@ -99,7 +99,7 @@ Position Error: ${distanceKm(node.true_position, node.kf_estimated_position)} km
     case POSITION_TYPE.kfEstimatedEllipse: {
       title = `Node ${node.id}: kalman filter estimated position 1σ ellipse`
       body = `
-${formatState(node)}
+${formatState(node, positionType)}
 
 Position Error: ${distanceKm(node.true_position, node.kf_estimated_position)} km
 `;

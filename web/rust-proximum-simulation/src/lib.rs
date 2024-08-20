@@ -1,9 +1,9 @@
-mod bindings;
 mod geometry;
 mod kalman;
 mod least_squares;
 mod node;
 mod physics;
 mod simulation;
+mod simulation_manager;
 mod stats;
 mod types;

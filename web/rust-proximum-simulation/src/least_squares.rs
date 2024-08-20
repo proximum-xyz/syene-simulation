@@ -84,16 +84,16 @@ pub fn ls_estimate_position_ecef(
         }
     }
 
-    Ok(estimate)
+    // Ok(estimate)
 
-    // let wgs84_estimate: WGS84<f64> = estimate.into();
+    let wgs84_estimate: WGS84<f64> = estimate.into();
 
-    // let clamped_estimate: ECEF<f64> = WGS84::from_radians_and_meters(
-    //     wgs84_estimate.latitude_radians(),
-    //     wgs84_estimate.longitude_radians(),
-    //     0.0,
-    // )
-    // .into();
+    let clamped_estimate: ECEF<f64> = WGS84::from_radians_and_meters(
+        wgs84_estimate.latitude_radians(),
+        wgs84_estimate.longitude_radians(),
+        0.0,
+    )
+    .into();
 
-    // Ok(clamped_estimate)
+    Ok(clamped_estimate)
 }

@@ -1,6 +1,7 @@
-use crate::kalman::SS;
+use crate::kalman::{NonlinearObservationModel, StationaryStateModel, SS};
 use adskalman::StateAndCovariance;
 use h3o::CellIndex;
+use rand::rngs::ThreadRng;
 use serde::{Deserialize, Serialize};
 extern crate nav_types;
 use nalgebra::{Const, OVector};
@@ -37,7 +38,7 @@ pub struct CompilerParams {
     pub n_measurements: usize,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct Node {
     pub id: usize,
     #[serde(with = "serialize_h3_index")]
@@ -73,7 +74,7 @@ pub struct Node {
     pub kf_state_and_covariance: StateAndCovariance<f64, SS>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone, Debug)]
 pub struct Stats {
     // simulation stats for each epoch
     // meters
@@ -90,9 +91,15 @@ pub struct Simulation {
     pub config: SimulationConfig,
     pub nodes: Vec<Node>,
     pub stats: Stats,
+    #[serde(skip)]
+    pub rng: ThreadRng,
+    #[serde(skip)]
+    pub kf_state_model: StationaryStateModel<f64>,
+    #[serde(skip)]
+    pub kf_observation_model_generator: NonlinearObservationModel,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SimulationConfig {
     // simulation parameters (note that the numbers of measurements per update is a compiler flag)
     pub n_nodes: usize,
@@ -126,4 +133,10 @@ pub enum PositionType {
     KfEstimated,
     LsEstimated,
     Asserted,
+}
+
+#[derive(Serialize, Debug)]
+pub struct ChunkResult {
+    pub nodes: Vec<Node>,
+    pub stats: Stats,
 }

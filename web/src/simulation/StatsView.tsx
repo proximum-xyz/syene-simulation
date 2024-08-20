@@ -61,20 +61,24 @@ const Stats = ({ stats }: { stats: Simulation['stats'] }) => {
             formatter={formatTooltipValue}
           />
           {/* <Legend wrapperStyle={{ color: '#fff' }} /> */}
-          <Line
+          {/* <Line
             type="monotone"
             dataKey="kfError"
             stroke={COLORS.blue}
             name="Kalman Filter Err."
-            dot={{ fill: '#333' }}
+            // dot={{ fill: '#333', radius: 0 }}
+
+            dot={{ fill: '#00000000', radius: 0, stroke: "#00000000" }}
           // activeDot={{ fill: '#00b8ff', stroke: '#00b8ff', strokeWidth: 2, r: 6 }}
-          />
+          /> */}
           <Line
             type="monotone"
             dataKey="lsError"
             stroke={COLORS.green}
             name="Least Squares Err."
-            dot={{ fill: '#333' }}
+
+            dot={{ fill: '#00000000', radius: 0, stroke: "#00000000" }}
+          // dot={{ fill: '#333', radius: 0 }}
           // activeDot={{ fill: '#00b8ff', stroke: '#00b8ff', strokeWidth: 2, r: 6 }}
           />
           <Line

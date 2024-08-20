@@ -38,33 +38,46 @@ export const FormWrapper = styled.div`
   box-sizing: border-box;
 `;
 
-export const Button = styled.button`
-  padding: 6px 12px;
-  background-color: ${COLORS.pink};
-  color: white;
-  border: none;
+export const Button = styled.button<{ disabled: boolean, secondary?: boolean }>`
+  padding: 8px 16px;
+  background-color: ${props => props.secondary ? 'transparent' : props.disabled ? '#666' : COLORS.pink};
+  color: ${props => props.disabled ? '#999' : props.secondary ? COLORS.pink : 'white'};
+  border: ${props => props.secondary ? (props.disabled ? '#666' : `1px solid ${COLORS.pink}`) : 'none'};
   border-radius: 4px;
-  cursor: pointer;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  transition: all 0.3s ease;
+  font-weight: bold;
+  opacity: ${props => props.disabled ? 0.7 : 1};
+
+  &:hover {
+    background-color: ${props => props.disabled ? '#666' : props.secondary ? COLORS.pink + '22' : COLORS.pink + 'dd'};
+  }
+
+  &:active {
+    transform: ${props => props.disabled ? 'none' : 'scale(0.98)'};
+  }
 `;
 
-export const ProgressIndicator = styled.div`
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid #ff4081;
-  border-top-color: transparent;
-  animation: spin 1s linear infinite;
-  margin-left: 8px;
+export const ProgressBar = styled.div<{ progress: number }>`
+  width: 100%;
+  height: 4px;
+  background-color: #444;
+  margin-top: 10px;
 
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
+  &::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: ${props => props.progress}%;
+    background-color: #00ff9f;
+    transition: width 0.3s ease;
   }
+`;
+
+export const ButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
 `;
 
 const FormGroup = styled.div`
@@ -86,14 +99,26 @@ const ReadOnlyValue = styled.div`
   cursor: default !important;
 `;
 
-const Input = styled.input`
+export const Input = styled.input<{ disabled?: boolean }>`
   width: 100%;
   padding: 4px 8px;
-  border: 1px solid #555555;
+  border: 1px solid ${props => props.disabled ? '#444444' : '#555555'};
   border-radius: 4px;
-  background-color: #333333;
-  color: #ffffff;
+  background-color: ${props => props.disabled ? '#2a2a2a' : '#333333'};
+  color: ${props => props.disabled ? '#888888' : '#ffffff'};
   box-sizing: border-box;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'auto'};
+  opacity: ${props => props.disabled ? 0.7 : 1};
+
+  &:hover {
+    border-color: ${props => props.disabled ? '#444444' : '#666666'};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${props => props.disabled ? '#444444' : '#777777'};
+    box-shadow: ${props => props.disabled ? 'none' : '0 0 0 2px rgba(85, 85, 85, 0.3)'};
+  }
 `;
 
 const HelpIcon = styled.span`
@@ -106,15 +131,26 @@ const SliderWrapper = styled.div`
   margin-top: 4px;
 `;
 
-const SliderInput = styled.input`
+export const SliderInput = styled.input<{ disabled?: boolean }>`
   width: 90%;
   padding: 4px;
-  border: 1px solid #555555;
+  border: 1px solid ${props => props.disabled ? '#444444' : '#555555'};
   border-radius: 4px;
-  background-color: #333333;
-  color: #ffffff;
+  background-color: ${props => props.disabled ? '#2a2a2a' : '#333333'};
+  color: ${props => props.disabled ? '#888888' : '#ffffff'};
   box-sizing: border-box;
-  margin-left: 8px;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'auto'};
+  opacity: ${props => props.disabled ? 0.7 : 1};
+
+  &:hover {
+    border-color: ${props => props.disabled ? '#444444' : '#666666'};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${props => props.disabled ? '#444444' : '#777777'};
+    box-shadow: ${props => props.disabled ? 'none' : '0 0 0 2px rgba(85, 85, 85, 0.3)'};
+  }
 `;
 
 export const HelpTextPopup = styled.div`
@@ -152,29 +188,84 @@ export const CloseButton = styled.button`
   margin-top: 12px;
 `;
 
-const CustomSlider = styled(Slider)`
+// const CustomSlider = styled(Slider)`
+//   .rc-slider-rail {
+//     background-color: #444444;
+//   }
+
+//   .rc-slider-track {
+//     background-color: #00ff9f;
+//   }
+
+//   .rc-slider-handle {
+//     border-color: #00ff9f;
+//     background-color: #00ff9f;
+//   }
+
+//   .rc-slider-handle:hover {
+//     border-color: #00aacc;
+//   }
+
+//   .rc-slider-handle:active {
+//     border-color: #00aacc;
+//     box-shadow: 0 0 5px #00aacc;
+//   }
+// `;
+
+const CustomSlider = styled(Slider) <{ disabled?: boolean }>`
+.rc-slider-rail {
+  background-color: #444444;
+}
+
+.rc-slider-track {
+  background-color: #00ff9f;
+}
+
+.rc-slider-handle {
+  border-color: #00ff9f;
+  background-color: #00ff9f;
+}
+
+.rc-slider-handle:hover {
+  border-color: #00aacc;
+}
+
+.rc-slider-handle:active {
+  border-color: #00aacc;
+  box-shadow: 0 0 5px #00aacc;
+}
+
+/* Disabled state styles */
+&.rc-slider-disabled {
+  background-color: transparent !important;
+
   .rc-slider-rail {
-    background-color: #444444;
+    background-color: #333333;
   }
 
   .rc-slider-track {
-    background-color: #00ff9f;
+    background-color: #555555;
   }
 
   .rc-slider-handle {
-    border-color: #00ff9f;
-    background-color: #00ff9f;
+    border-color: #555555;
+    background-color: #555555;
+    cursor: not-allowed;
   }
 
-  .rc-slider-handle:hover {
-    border-color: #00aacc;
-  }
-
+  .rc-slider-handle:hover,
   .rc-slider-handle:active {
-    border-color: #00aacc;
-    box-shadow: 0 0 5px #00aacc;
+    border-color: #444444;
+    box-shadow: none;
   }
+
+  .rc-slider-mark-text,
+  .rc-slider-dot {
+    cursor: not-allowed !important;
+  }
+}
 `;
+
 
 const SliderInputWrapper = styled.div`
   display: flex;
@@ -324,13 +415,15 @@ export const FormField = ({
     step: 0.01,
     slider: false,
     readonly: false
-  }
+  },
+  disabled = false
 }: {
   name: FieldKeys
   control: Control<SimulationParamFields, any>,
   watch: UseFormWatch<SimulationParamFields>,
   setShowHelp: Dispatch<SetStateAction<keyof SimulationParamFields | undefined>>,
-  options?: FieldOptions
+  options?: FieldOptions,
+  disabled?: boolean
 }) => {
   const numericController = () => (
     options.readonly ? <ReadOnlyValue>{watch(name)}</ReadOnlyValue>
@@ -338,7 +431,7 @@ export const FormField = ({
       <Controller
         name={name}
         control={control}
-        render={({ field }) => <Input type="number" min={options.min} max={options.max} step={options.step} {...field as any} />}
+        render={({ field }) => <Input type="number" min={options.min} max={options.max} step={options.step} {...field as any} disabled={disabled} />}
       />);
 
   const sliderController = () => {
@@ -357,6 +450,7 @@ export const FormField = ({
                 step={options.step}
                 value={[minValue, maxValue]}
                 onChange={field.onChange}
+                disabled={disabled}
               />
               <SliderInputWrapper>
                 <SliderInput
@@ -371,6 +465,7 @@ export const FormField = ({
                       field.onChange([newMinValue, maxValue]);
                     }
                   }}
+                  disabled={disabled}
                 />
                 <SliderInput
                   type="number"
@@ -384,6 +479,7 @@ export const FormField = ({
                       field.onChange([minValue, newMaxValue]);
                     }
                   }}
+                  disabled={disabled}
                 />
               </SliderInputWrapper>
             </SliderWrapper>

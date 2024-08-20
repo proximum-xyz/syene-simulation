@@ -53,71 +53,62 @@ impl Simulation {
             config,
             nodes,
             stats: Stats::new(),
+            kf_state_model: StationaryStateModel::new(1.0, 10.0, 10.0, STATE_FACTOR),
+            kf_observation_model_generator: NonlinearObservationModel::new(),
+            rng: thread_rng(),
         }
     }
 
-    pub fn run_simulation(&mut self) -> Result<bool, Box<dyn Error>> {
-        info!("Running simulation: for {} epochs!", self.config.n_epochs);
+    pub fn run_epoch(&mut self) -> Result<bool, Box<dyn Error>> {
+        // info!("Running epoch");
+        let mut indices: Vec<usize> = (0..self.config.n_nodes).collect();
+        indices.shuffle(&mut self.rng);
 
-        let state_model = StationaryStateModel::new(1.0, 10.0, 10.0, STATE_FACTOR);
-        let observation_model_generator = NonlinearObservationModel::new();
+        for &i in &indices {
+            match generate_measurements(
+                self.nodes[i].true_position,
+                self.nodes[i].true_beta,
+                self.nodes[i].true_tau,
+                Some(i),
+                &self.nodes,
+                N_MEASUREMENTS,
+                self.config.message_distance_max,
+                self.config.beta_variance,
+                self.config.tau_variance,
+            ) {
+                Ok(measurements) => {
+                    // self.nodes[i].kf_state_and_covariance = kf_step(
+                    //     i,
+                    //     &measurements,
+                    //     &mut self.nodes,
+                    //     &self.kf_observation_model_generator,
+                    //     &self.kf_state_model,
+                    //     self.config.kf_model_tof_observation_variance,
+                    // );
+                    self.nodes[i].log_kf_estimated_positions();
 
-        let mut rng = thread_rng();
+                    self.nodes[i].ls_estimated_position = ls_estimate_position_ecef(
+                        self.nodes[i].ls_estimated_position,
+                        &measurements,
+                        &self.nodes,
+                        self.config.ls_model_beta,
+                        self.config.ls_model_tau,
+                        self.config.ls_tolerance,
+                        self.config.ls_iterations,
+                    )?;
+
+                    self.nodes[i].log_ls_estimated_positions();
+                }
+                Err(e) => {
+                    warn!("Skipping update for node {}: {}", i, e);
+                    continue;
+                }
+            }
+        }
 
         log_stats(&mut self.stats, &self.nodes);
 
-        for i in 0..self.config.n_epochs {
-            info!("Running epoch {} of {}!", i, self.config.n_epochs);
-            let mut indices: Vec<usize> = (0..self.config.n_nodes).collect();
-            indices.shuffle(&mut rng);
-
-            for &i in &indices {
-                match generate_measurements(
-                    self.nodes[i].true_position,
-                    self.nodes[i].true_beta,
-                    self.nodes[i].true_tau,
-                    Some(i),
-                    &self.nodes,
-                    N_MEASUREMENTS,
-                    self.config.message_distance_max,
-                    self.config.beta_variance,
-                    self.config.tau_variance,
-                ) {
-                    Ok(measurements) => {
-                        // Existing code for position estimation
-                        self.nodes[i].kf_state_and_covariance = kf_step(
-                            i,
-                            &measurements,
-                            &mut self.nodes,
-                            &observation_model_generator,
-                            &state_model,
-                            self.config.kf_model_tof_observation_variance,
-                        );
-                        self.nodes[i].log_kf_estimated_positions();
-
-                        self.nodes[i].ls_estimated_position = ls_estimate_position_ecef(
-                            self.nodes[i].ls_estimated_position,
-                            &measurements,
-                            &self.nodes,
-                            self.config.ls_model_beta,
-                            self.config.ls_model_tau,
-                            self.config.ls_tolerance,
-                            self.config.ls_iterations,
-                        )?;
-
-                        self.nodes[i].log_ls_estimated_positions();
-                    }
-                    Err(e) => {
-                        warn!("Skipping update for node {}: {}", i, e);
-                        continue;
-                    }
-                }
-            }
-
-            log_stats(&mut self.stats, &self.nodes);
-
-            info!("Finished epoch {} of {}!", i, self.config.n_epochs);
-        }
+        // info!("Finished epoch");
         Ok(true)
     }
 }

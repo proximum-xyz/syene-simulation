@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircleMarker, Marker, Polyline, Polygon } from 'react-leaflet';
+import { CircleMarker, Marker, Polyline, Polygon, PolylineProps } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import Ellipse, { EllipseProps } from './LeafletEllipse';
@@ -8,10 +8,27 @@ import NodeDescriptionPopup, { POSITION_TYPE } from './NodeDescriptionPopup';
 import { cellToBoundary } from 'h3-js';
 import { rad2deg } from '../utils';
 import { Node } from '../types';
+import GeodesicLine from './GeodesicLine';
+
+
+
+// interface NoWrapPolylineProps {
+//   positions: PolylineProps["positions"];
+//   color: string;
+//   weight?: number;
+// }
+
+// const NoWrapPolyline: React.FC<NoWrapPolylineProps> = ({
+//   positions,
+//   color,
+//   weight,
+// }) => {
+//   return <Polyline positions={positions} color={color} weight={weight} />
+// }
 
 export const SimulationMapContent = ({ nodes }: { nodes: Node[] | undefined }) => {
 
-  if (!nodes || nodes.length == 0) {
+  if (!nodes || nodes.length === 0) {
     return null;
   }
 
@@ -42,31 +59,35 @@ export const SimulationMapContent = ({ nodes }: { nodes: Node[] | undefined }) =
           <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.assertedCell} />
         </Polygon>
 
-        <Polyline positions={[assertedLatLngDeg, trueLatLngDeg, kfEstLatLngDeg]} color={COLORS.grey} weight={1} />
-        <Polyline positions={[lsEstLatLngDeg, trueLatLngDeg]} color={COLORS.grey} weight={1} />
-        <CircleMarker center={kfEstLatLngDeg} color={COLORS.blue} fill fillColor={COLORS.blue} radius={3}>
+        {/* <Polyline positions={[assertedLatLngDeg, trueLatLngDeg, kfEstLatLngDeg]} color={COLORS.grey} weight={1} />
+        <Polyline positions={[lsEstLatLngDeg, trueLatLngDeg]} color={COLORS.grey} weight={1} /> */}
+        {/* <CircleMarker center={kfEstLatLngDeg} color={COLORS.blue} fill fillColor={COLORS.blue} radius={3}>
           <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.kfEstimated} />
-        </CircleMarker>
+        </CircleMarker> */}
         <CircleMarker center={lsEstLatLngDeg} color={COLORS.green} fill fillColor={COLORS.green} radius={3}>
           <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.lsEstimated} />
         </CircleMarker>
         <CircleMarker center={assertedLatLngDeg} color={COLORS.pink} fill fillColor={COLORS.pink} radius={3}>
           <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.asserted} />
         </CircleMarker>
-        <Ellipse {...ellipseConfig}>
+        {/* <Ellipse {...ellipseConfig}>
           <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.kfEstimatedEllipse} />
-        </Ellipse>
+        </Ellipse> */}
 
-        {/* <GeodesicLine points={[trueLatLngDeg, assertedLatLngDeg]} options={{ color: "ff8c00" }} />
-          <GeodesicLine points={[trueLatLngDeg, kfEstLatLngDeg]} options={{ color: COLORS.blue }} /> */}
-        <Marker position={trueLatLngDeg} icon={L.divIcon({
+        <GeodesicLine points={[trueLatLngDeg, assertedLatLngDeg]} options={{ color: COLORS.grey, weight: 0.4 }} />
+        {/* <GeodesicLine points={[trueLatLngDeg, kfEstLatLngDeg]} options={{ color: COLORS.grey, weight: 0.1 }} /> */}
+        <GeodesicLine points={[trueLatLngDeg, lsEstLatLngDeg]} options={{ color: COLORS.grey, weight: 0.4 }} />
+        {/* <Marker position={trueLatLngDeg} icon={L.divIcon({
           className: 'leaflet-custom-marker',
           html: `<div>${i}</div>`,
           iconSize: [30, 30],
           iconAnchor: [15, 15]
         })}>
           <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.true} />
-        </Marker>
+        </Marker> */}
+        <CircleMarker center={trueLatLngDeg} color={COLORS.white} fill fillColor={COLORS.white} radius={3}>
+          <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.true} />
+        </CircleMarker>
       </React.Fragment >
     );
   })

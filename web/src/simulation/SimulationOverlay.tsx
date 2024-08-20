@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import SimulationForm from './SimulationForm';
-import Stats from './Stats';
-import { CompilerParams, PATHS, Simulation, SimulationConfig } from '../types';
+import StatsView from './StatsView';
+import { CompilerParams, PATHS, SimulationConfig, Stats } from '../types';
 import { InitOutput, get_compile_parameters } from 'rust-proximum-simulation';
 import { useNavigate } from 'react-router-dom';
 
@@ -72,13 +72,18 @@ const Column2 = styled.div`
 
 interface SimulationOverlayProps {
   runSimulation: (params: SimulationConfig) => void;
-  simulation: Simulation | undefined;
+  resetSimulation: (params: SimulationConfig) => void;
+  stats: Stats | undefined;
   wasm: InitOutput;
+  progress: number;
 }
 
 const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
+  stats,
   runSimulation,
-  simulation,
+  resetSimulation,
+  wasm,
+  progress
 }) => {
   const [isFormCollapsed, setIsFormCollapsed] = useState(false);
   const [isStatsCollapsed, setIsStatsCollapsed] = useState(false);
@@ -113,7 +118,9 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
             <>
               <SimulationForm
                 runSimulation={runSimulation}
+                resetSimulation={resetSimulation}
                 compilerParams={compilerParams}
+                progress={progress}
               />
             </>
           )
@@ -121,8 +128,8 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
       </Column>)
   }
 
-  const stats = () => {
-    if (!simulation?.stats) {
+  const statsView = () => {
+    if (!stats) {
       return null
     }
     return (
@@ -130,7 +137,7 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
         <ToggleButton onClick={() => { setIsStatsCollapsed(!isStatsCollapsed) }}>
           {isStatsCollapsed ? 'Show Stats' : 'Hide Stats'}
         </ToggleButton>
-        {!isStatsCollapsed && < Stats stats={simulation.stats} />}
+        {!isStatsCollapsed && < StatsView stats={stats} />}
       </Column2>
     )
   }
@@ -139,7 +146,7 @@ const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
     <OverlayWrapper>
       {home}
       {form()}
-      {stats()}
+      {statsView()}
     </OverlayWrapper >
   );
 };

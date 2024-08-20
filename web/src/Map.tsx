@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Outlet } from 'react-router-dom';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import init, { simulate, InitOutput } from 'rust-proximum-simulation';
+import rustWasmInit, { initialize_simulation, InitOutput, run_simulation_chunk } from 'rust-proximum-simulation';
 import { PATHS, Simulation, SimulationConfig } from './types';
 import SimulationOverlay from './simulation/SimulationOverlay';
 import { SimulationMapContent } from './simulation/SimulationMapContent';
@@ -10,25 +10,81 @@ import WelcomeModal from './WelcomeModal';
 import { TestnetMapContent } from './testnet/TestnetMapContent';
 
 const Map = () => {
-  const [simulation, setSimulation] = useState<Simulation>();
-
   // initialize WASM
   const [wasm, setWasm] = useState<InitOutput>();
 
   useEffect(() => {
     (async () => {
-      setWasm(await init());
+      setWasm(await rustWasmInit());
     })()
   }, []);
 
-  function runSimulation(simulationConfig: SimulationConfig) {
-    const simString = simulate(simulationConfig);
+  // const [worker, setWorker] = useState<Worker | null>(null);
 
-    const sim = JSON.parse(simString);
-    setSimulation(sim);
+  // const [simulation, setSimulation] = useState<Simulation>();
+  const [nodes, setNodes] = useState<Simulation["nodes"]>();
+  const [stats, setStats] = useState<Simulation["stats"]>();
+  // const [simulationInitialized, setSimulationInitialized] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-    console.log('***', { sim });
+  // set up a web worker
+  // useEffect(() => {
+  //   const worker = new Worker(new URL('./simulation-worker.ts', import.meta.url));
+  //   setWorker(worker);
 
+  //   worker.onmessage = (e) => {
+  //     const { nodes, stats } = e.data;
+  //     setNodes(nodes);
+  //     setStats(stats);
+  //   };
+
+  //   return () => {
+  //     worker.terminate();
+  //   };
+  // }, []);
+
+  async function resetSimulation(): Promise<void> {
+    // set up wasm
+    setNodes([]);
+    setStats(undefined);
+  }
+
+  async function runSimulation(config: SimulationConfig): Promise<void> {
+    // This is clearly a new simulation
+    if (nodes?.length === 0) {
+      await initialize_simulation(config);
+      await resetSimulation()
+      // setSimulationInitialized(true);
+    }
+
+    const CHUNK_SIZE = 25; // Adjust based on performance
+
+    const totalEpochs = config.n_epochs;
+    const chunks = Math.ceil(totalEpochs / CHUNK_SIZE);
+
+    // run through each chunk in the background using a web worker
+    for (let i = 0; i < chunks; i++) {
+      const remainingEpochs = totalEpochs - i * CHUNK_SIZE;
+      const chunkSize = Math.min(CHUNK_SIZE, remainingEpochs);
+
+      const { nodes, stats } = await run_simulation_chunk(chunkSize);
+
+      setNodes(nodes);
+      setStats(stats);
+
+      setProgress((i + 1) / chunks * 100);
+
+      // give UI a chance to update
+      await new Promise(resolve => setTimeout(resolve, 0));
+      // if (worker) {
+      //   worker.postMessage(chunkSize);
+      // }
+      // else {
+      //   alert("worker not yet initialized")
+      // }
+    }
+
+    setProgress(0);
   }
 
   return (
@@ -50,11 +106,13 @@ const Map = () => {
           <Route path={PATHS.register} element={<TestnetMapContent />} />
           <Route path={PATHS.simulation} element={
             <>
-              <SimulationMapContent nodes={simulation?.nodes} />
+              <SimulationMapContent nodes={nodes} />
               {wasm && <SimulationOverlay
-                runSimulation={runSimulation}
-                simulation={simulation}
+                progress={progress}
                 wasm={wasm}
+                stats={stats}
+                runSimulation={runSimulation}
+                resetSimulation={resetSimulation}
               />}
             </>
           } />

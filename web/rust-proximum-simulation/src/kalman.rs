@@ -1,3 +1,5 @@
+use std::panic::{catch_unwind, AssertUnwindSafe};
+
 use adskalman::{KalmanFilterNoControl, ObservationModel, StateAndCovariance, TransitionModelLinearNoControl};
 use log::trace;
 use nalgebra::DimName;
@@ -8,6 +10,7 @@ use nav_types::{ECEF, WGS84};
 
 use crate::physics::C;
 use crate::types::Node;
+use log::error;
 
 // Dimensions: ECEF coordinates +  [x_ECEF; y_ECEF; z_ECEF; β_c; τ]
 // β_c: average message propagation speed from this node to other nodes
@@ -288,33 +291,60 @@ pub fn kf_step(
   let state = kf_state_and_covariance.state_mut();
   let normalized_state = normalize_state(state);
 
-  let wgs84_position: WGS84<f64> = ECEF::new(
-      normalized_state[0],
-      normalized_state[1],
-      normalized_state[2],
-  )
-  .into();
+  let position = ECEF::new(
+    normalized_state[0],
+    normalized_state[1],
+    normalized_state[2],
+);
 
-  let lat_radians = wgs84_position.latitude_radians();
-  let lng_radians = wgs84_position.longitude_radians();
-  // info!("pos in kf update: {:#?}, lat_lng: {:#?}, {:#?}", wgs84_position, lat_radians, lng_radians);
+  let wgs84_position: WGS84<f64> = position.into();
 
-  let clamped_ecef_position: ECEF<f64> = WGS84::from_radians_and_meters(
-      wgs84_position.latitude_radians(),
-      wgs84_position.longitude_radians(),
-      0.0,
-  )
-  .into();
+  let clamped_ecef_position = catch_unwind(AssertUnwindSafe(|| {
+    WGS84::from_radians_and_meters(
+        wgs84_position.latitude_radians(),
+        wgs84_position.longitude_radians(),
+        0.0,
+    )
+    .into()
+  }));
 
-  let spring_displacement = (node.asserted_position - clamped_ecef_position) / 500.0;
+  match clamped_ecef_position {
+      Ok(position) => {
+          // Conversion succeeded, use the position
+          let clamped_ecef_position: ECEF<f64> = position;
+          // ... rest of your code using clamped_ecef_position
+          let spring_displacement = (node.asserted_position - clamped_ecef_position) / 500.0;
 
-  let adjusted_ecef_position = clamped_ecef_position + spring_displacement;
+    let adjusted_ecef_position = clamped_ecef_position + spring_displacement;
 
-  state[0] = adjusted_ecef_position.x() / STATE_FACTOR[0];
-  state[1] = adjusted_ecef_position.y() / STATE_FACTOR[1];
-  state[2] = adjusted_ecef_position.z() / STATE_FACTOR[2];
+    state[0] = adjusted_ecef_position.x() / STATE_FACTOR[0];
+    state[1] = adjusted_ecef_position.y() / STATE_FACTOR[1];
+    state[2] = adjusted_ecef_position.z() / STATE_FACTOR[2];
 
-  return kf_state_and_covariance;
-  // record new estimated position in various coordinate sysetems
-  
+    return kf_state_and_covariance;
+      },
+      Err(e) => {
+          // Conversion failed, log the error and the input values
+          error!("ECEF to WGS84 conversion failed. ECEF: ({}, {}, {})", 
+                normalized_state[0], normalized_state[1], normalized_state[2]);
+          
+          if let Some(error_message) = e.downcast_ref::<String>() {
+              error!("Error message: {}", error_message);
+          } else {
+              error!("Unknown panic occurred during conversion");
+          }
+
+          let clamped_ecef_position: ECEF<f64> = position;
+          // ... rest of your code using clamped_ecef_position
+          let spring_displacement = (node.asserted_position - clamped_ecef_position) / 500.0;
+
+          let adjusted_ecef_position = clamped_ecef_position + spring_displacement;
+
+          state[0] = adjusted_ecef_position.x() / STATE_FACTOR[0];
+          state[1] = adjusted_ecef_position.y() / STATE_FACTOR[1];
+          state[2] = adjusted_ecef_position.z() / STATE_FACTOR[2];
+
+          return kf_state_and_covariance;
+      }
+  }
 }
