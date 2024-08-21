@@ -1,8 +1,6 @@
 use crate::geometry::{normal_neighbor_index, uniform_h3_index};
 extern crate nav_types;
-use crate::kalman::{
-    kf_step, NonlinearObservationModel, StationaryStateModel, N_MEASUREMENTS, STATE_FACTOR,
-};
+use crate::kalman::{kf_step, NonlinearObservationModel, StationaryStateModel, STATE_FACTOR};
 use crate::least_squares::ls_estimate_position_ecef;
 use crate::physics::generate_measurements;
 use crate::stats::log_stats;
@@ -74,14 +72,16 @@ impl Simulation {
                 &self.config,
             ) {
                 Ok(measurements) => {
-                    // self.nodes[i].kf_state_and_covariance = kf_step(
-                    //     i,
-                    //     &measurements,
-                    //     &mut self.nodes,
-                    //     &self.kf_observation_model_generator,
-                    //     &self.kf_state_model,
-                    //     self.config.kf_model_tof_observation_variance,
-                    // );
+                    if false {
+                        self.nodes[i].kf_state_and_covariance = kf_step(
+                            i,
+                            &measurements,
+                            &mut self.nodes,
+                            &self.kf_observation_model_generator,
+                            &self.kf_state_model,
+                            self.config.kf_model_tof_observation_variance,
+                        );
+                    }
                     self.nodes[i].log_kf_estimated_positions();
 
                     self.nodes[i].ls_estimated_position = ls_estimate_position_ecef(

@@ -1,7 +1,7 @@
 use crate::kalman::N_MEASUREMENTS;
 use crate::types::SimulationConfig;
 use crate::{kalman::OS, types::Node};
-use log::{info, trace};
+use log::trace;
 use nalgebra::OVector;
 use nav_types::ECEF;
 use rand::prelude::*;
