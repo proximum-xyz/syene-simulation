@@ -35,16 +35,16 @@ const Title = styled.h2`
   color: ${COLORS.green}
 `;
 
-const RegisterButton = styled.button`
-  padding: 8px 16px;
-  background-color: ${COLORS.pink};
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 8px;
-  margin-right: 16px;
-`;
+// const RegisterButton = styled.button`
+//   padding: 8px 16px;
+//   background-color: ${COLORS.pink};
+//   color: white;
+//   border: none;
+//   border-radius: 4px;
+//   cursor: pointer;
+//   margin-top: 8px;
+//   margin-right: 16px;
+// `;
 
 const SimulateButton = styled.button`
   padding: 8px 16px;
@@ -61,9 +61,9 @@ const SimulateButton = styled.button`
 const WelcomeModal: React.FC = () => {
   const navigate = useNavigate();
 
-  const handleRegisterClick = () => {
-    navigate(PATHS.register); // Navigate to the registration page
-  };
+  // const handleRegisterClick = () => {
+  //   navigate(PATHS.register); // Navigate to the registration page
+  // };
 
   const handleSimulateClick = () => {
     navigate(PATHS.simulation); // Navigate to the simulation page

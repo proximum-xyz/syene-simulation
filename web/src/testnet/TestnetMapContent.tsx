@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Polygon, useMapEvents } from 'react-leaflet';
-import { latLngToCell, cellToBoundary, CoordPair } from 'h3-js';
+import { latLngToCell, cellToBoundary } from 'h3-js';
 import { COLORS } from '../types';
 import styled from 'styled-components';
 import { ethers } from 'ethers';

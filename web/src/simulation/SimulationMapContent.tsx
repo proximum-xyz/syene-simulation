@@ -1,30 +1,13 @@
 import React from 'react';
-import { CircleMarker, Marker, Polyline, Polygon, PolylineProps } from 'react-leaflet';
+import { CircleMarker, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import Ellipse, { EllipseProps } from './LeafletEllipse';
+// import { EllipseProps } from './LeafletEllipse';
 import { COLORS } from '../types';
 import NodeDescriptionPopup, { POSITION_TYPE } from './NodeDescriptionPopup';
 import { cellToBoundary } from 'h3-js';
 import { rad2deg } from '../utils';
 import { Node } from '../types';
 import GeodesicLine from './GeodesicLine';
-
-
-
-// interface NoWrapPolylineProps {
-//   positions: PolylineProps["positions"];
-//   color: string;
-//   weight?: number;
-// }
-
-// const NoWrapPolyline: React.FC<NoWrapPolylineProps> = ({
-//   positions,
-//   color,
-//   weight,
-// }) => {
-//   return <Polyline positions={positions} color={color} weight={weight} />
-// }
 
 export const SimulationMapContent = ({ nodes }: { nodes: Node[] | undefined }) => {
 
@@ -37,20 +20,20 @@ export const SimulationMapContent = ({ nodes }: { nodes: Node[] | undefined }) =
     const assertedPolygonBoundary = cellToBoundary(node.asserted_index);
     const trueLatLngDeg = [node.true_wgs84.latitude, node.true_wgs84.longitude].map(rad2deg) as [number, number];
     const assertedLatLngDeg = [node.asserted_wgs84.latitude, node.asserted_wgs84.longitude].map(rad2deg) as [number, number];
-    const kfEstLatLngDeg = [node.kf_estimated_wgs84.latitude, node.kf_estimated_wgs84.longitude].map(rad2deg) as [number, number];
+    // const kfEstLatLngDeg = [node.kf_estimated_wgs84.latitude, node.kf_estimated_wgs84.longitude].map(rad2deg) as [number, number];
     const lsEstLatLngDeg = [node.ls_estimated_wgs84.latitude, node.ls_estimated_wgs84.longitude].map(rad2deg) as [number, number];
 
     // Convert covariances to standard deviations: the ellipse represents the 1 Std. Dev. confidence interval.
-    const ellipseRadii1StdDev = [node.kf_en_variance_semimajor_axis_length, node.kf_en_variance_semiminor_axis_length].map(Math.sqrt) as [number, number];
-    const ellipseTilt = rad2deg(Math.atan2(node.kf_en_variance_semimajor_axis[1], node.kf_en_variance_semimajor_axis[0]));
-    const ellipseConfig: EllipseProps = {
-      center: kfEstLatLngDeg,
-      radii: ellipseRadii1StdDev,
-      tilt: ellipseTilt,
-      options: {
-        color: COLORS.blue
-      }
-    }
+    // const ellipseRadii1StdDev = [node.kf_en_variance_semimajor_axis_length, node.kf_en_variance_semiminor_axis_length].map(Math.sqrt) as [number, number];
+    // const ellipseTilt = rad2deg(Math.atan2(node.kf_en_variance_semimajor_axis[1], node.kf_en_variance_semimajor_axis[0]));
+    // const ellipseConfig: EllipseProps = {
+    //   center: kfEstLatLngDeg,
+    //   radii: ellipseRadii1StdDev,
+    //   tilt: ellipseTilt,
+    //   options: {
+    //     color: COLORS.blue
+    //   }
+    // }
 
     return (
       <React.Fragment key={i}>
@@ -58,9 +41,6 @@ export const SimulationMapContent = ({ nodes }: { nodes: Node[] | undefined }) =
         <Polygon positions={assertedPolygonBoundary} color={COLORS.pink} fillColor={COLORS.pink} fillOpacity={0.2} weight={1}>
           <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.assertedCell} />
         </Polygon>
-
-        {/* <Polyline positions={[assertedLatLngDeg, trueLatLngDeg, kfEstLatLngDeg]} color={COLORS.grey} weight={1} />
-        <Polyline positions={[lsEstLatLngDeg, trueLatLngDeg]} color={COLORS.grey} weight={1} /> */}
         {/* <CircleMarker center={kfEstLatLngDeg} color={COLORS.blue} fill fillColor={COLORS.blue} radius={3}>
           <NodeDescriptionPopup node={node} positionType={POSITION_TYPE.kfEstimated} />
         </CircleMarker> */}
