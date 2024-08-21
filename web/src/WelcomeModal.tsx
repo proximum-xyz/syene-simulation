@@ -73,10 +73,11 @@ const WelcomeModal: React.FC = () => {
     <ModalWrapper>
       <ModalContent>
         <Title>Proximum: Syene Testnet</Title>
-        Register a testnet node to participate in Proximum, the global <Link href="https://proximum.xyz">location network</Link>.
+        Simulate the Proximum location network inside your browser. Adjust the parameters to see how it handles real-world latencies, message speeds, and deceptive nodes in a robust way.
+        {/* Register a testnet node to participate in Proximum, the global <Link href="https://proximum.xyz">location network</Link>.
         <p>
           Sign up for early Syene access today or simulate the network and play with network parameters.
-        </p>
+        </p> */}
         <p>
           Check out the <Link href="https://proximum.xyz/proximum-lightpaper.pdf">Lightpaper</Link> or <Link href="https://github.com/proximum-xyz/syene-simulation">Github</Link> to learn more.
         </p>
