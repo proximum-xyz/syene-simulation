@@ -33,17 +33,21 @@ jobs:
           rustup target add wasm32-unknown-unknown
       
       - name: Install wasm-pack
+        working-directory: web
         run: |
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           cd rust-proximum-simulation && cargo clean
 
       - name: Compile Rust to WASM
+        working-directory: web
         run: npm run compile-wasm
 
       - name: Install dependencies (including Rust dependencies)
+        working-directory: web
         run: npm install
 
       - name: Build the project
+        working-directory: web
         run: npm run build
 
       - name: Configure AWS credentials
@@ -54,6 +58,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy to S3
+        working-directory: web
         run: |
           aws s3 sync ./build s3://${{ env.AWS_BUCKET }} --delete
 
