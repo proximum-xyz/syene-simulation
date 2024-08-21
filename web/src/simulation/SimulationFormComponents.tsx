@@ -166,6 +166,7 @@ export const HelpTextPopup = styled.div`
   max-width: 600px;
   width: 100%;
   box-sizing: border-box;
+  z-index: 1000000;
 `;
 
 export const HelpTextTitle = styled.h2`
@@ -187,30 +188,6 @@ export const CloseButton = styled.button`
   cursor: pointer;
   margin-top: 12px;
 `;
-
-// const CustomSlider = styled(Slider)`
-//   .rc-slider-rail {
-//     background-color: #444444;
-//   }
-
-//   .rc-slider-track {
-//     background-color: #00ff9f;
-//   }
-
-//   .rc-slider-handle {
-//     border-color: #00ff9f;
-//     background-color: #00ff9f;
-//   }
-
-//   .rc-slider-handle:hover {
-//     border-color: #00aacc;
-//   }
-
-//   .rc-slider-handle:active {
-//     border-color: #00aacc;
-//     box-shadow: 0 0 5px #00aacc;
-//   }
-// `;
 
 const CustomSlider = styled(Slider) <{ disabled?: boolean }>`
 .rc-slider-rail {
