@@ -8,16 +8,16 @@ import ReactMarkdown from 'react-markdown';
 const defaultSimulationConfig = {
   nNodes: 25,
   nMeasurements: 10,
-  nEpochs: 10,
+  nEpochs: 100,
   h3Resolution: 7,
   // km
   assertedPositionStddev: 100,
   // %c
-  betaRange: [0.99, 1.00],
+  betaRange: [0.4, 0.6],
   // %c
   betaStddev: 0.001,
   // ms
-  tauRange: [0, 1],
+  tauRange: [5, 15],
   // ms
   tauStddev: 1,
   // km
@@ -25,15 +25,17 @@ const defaultSimulationConfig = {
   // km
   modelPositionStddev: 10,
   // %c
-  modelBeta: 0.99,
+  modelBeta: 0.5,
   // %c
   modelBetaStddev: 0.001,
   // ms
-  modelTau: 0,
+  modelTau: 10,
   // ms
   modelTauStddev: 0.01,
   // ms
-  modelTofObservationStddev: 1
+  modelTofObservationStddev: 1,
+  // count
+  leastSquaresIterations: 1,
 };
 
 
@@ -88,10 +90,11 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
       message_distance_max: parseFloat(params.messageDistanceMax) * 1000,
 
       // least squares parameters
-      ls_model_beta: 0.01,
-      ls_model_tau: 0.01,
+      ls_model_beta: parseFloat(params.modelBeta),
+      // convert ms to s
+      ls_model_tau: parseFloat(params.modelTau) / 1000,
+      ls_iterations: parseFloat(params.leastSquaresIterations),
       ls_tolerance: 1,
-      ls_iterations: 10,
       // convert km stdev to m variance
       kf_model_position_variance: (parseFloat(params.modelPositionStddev) * 1000) ** 2,
 
@@ -144,7 +147,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
     <FormWrapper>
       <h2>Proximum Simulation</h2>
       <form onSubmit={handleSubmit(onSubmit as any)}>
-        <FormField name='nNodes' control={control} watch={watch} setShowHelp={setShowHelp} disabled={!canEditForm} />
+        <FormField name='nNodes' control={control} watch={watch} setShowHelp={setShowHelp} disabled={!canEditForm} options={{ min: parseInt(compilerParams.n_measurements) + 1 }} />
         <FormField name='nEpochs' control={control} watch={watch} setShowHelp={setShowHelp} disabled={!canEditForm} />
         <FormField name='nMeasurements' control={control} watch={watch} setShowHelp={setShowHelp} options={{ readonly: true }} disabled={!canEditForm} />
 
@@ -156,11 +159,12 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
         {/* <FormField name='tauStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0.001, max: 10000, step: 0.001 }} /> */}
         <FormField name='messageDistanceMax' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 100, max: 13000 }} disabled={!canEditForm} />
 
+        <SectionHeader1>Estimation Parameters</SectionHeader1>
+        <FormField name='modelTau' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 100000, step: 0.001 }} disabled={!canEditForm} />
+        <FormField name='modelBeta' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 1, step: 0.01 }} disabled={!canEditForm} />
         {/* <SectionHeader1>Model Parameters</SectionHeader1>
         <FormField name='modelPositionStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0.0, step: 0.001 }} />
-        <FormField name='modelBeta' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 1, step: 0.01 }} />
         <FormField name='modelBetaStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 0.5, step: 0.01 }} />
-        <FormField name='modelTau' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 100000, step: 0.001 }} />
         <FormField name='modelTauStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 100000, step: 0.001 }} />
         <FormField name='modelTofObservationStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0.0, step: 0.001 }} /> */}
 
@@ -173,7 +177,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
           </Button>
           {hasSimulated && <Button
             type="button"
-            secondary
+            $secondary={true}
             disabled={isSimulating}
             onClick={handleResetSimulation}
           >

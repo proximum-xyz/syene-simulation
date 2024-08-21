@@ -71,10 +71,7 @@ impl Simulation {
                 self.nodes[i].true_tau,
                 Some(i),
                 &self.nodes,
-                N_MEASUREMENTS,
-                self.config.message_distance_max,
-                self.config.beta_variance,
-                self.config.tau_variance,
+                &self.config,
             ) {
                 Ok(measurements) => {
                     // self.nodes[i].kf_state_and_covariance = kf_step(
@@ -89,12 +86,11 @@ impl Simulation {
 
                     self.nodes[i].ls_estimated_position = ls_estimate_position_ecef(
                         self.nodes[i].ls_estimated_position,
+                        self.nodes[i].asserted_position,
+                        self.nodes[i].true_position,
                         &measurements,
                         &self.nodes,
-                        self.config.ls_model_beta,
-                        self.config.ls_model_tau,
-                        self.config.ls_tolerance,
-                        self.config.ls_iterations,
+                        &self.config,
                     )?;
 
                     self.nodes[i].log_ls_estimated_positions();

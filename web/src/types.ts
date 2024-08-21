@@ -126,6 +126,8 @@ export type SimulationParamFields = {
   modelTauStddev: string
   // 
   modelTofObservationStddev: string
+  // count
+  leastSquaresIterations: string
 };
 
 // this is what we get back from the Rust simulate call

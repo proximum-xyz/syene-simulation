@@ -38,11 +38,11 @@ export const FormWrapper = styled.div`
   box-sizing: border-box;
 `;
 
-export const Button = styled.button<{ disabled: boolean, secondary?: boolean }>`
+export const Button = styled.button<{ disabled: boolean, $secondary?: boolean }>`
   padding: 8px 16px;
-  background-color: ${props => props.secondary ? 'transparent' : props.disabled ? '#666' : COLORS.pink};
-  color: ${props => props.disabled ? '#999' : props.secondary ? COLORS.pink : 'white'};
-  border: ${props => props.secondary ? (props.disabled ? '#666' : `1px solid ${COLORS.pink}`) : 'none'};
+  background-color: ${props => props.$secondary ? 'transparent' : props.disabled ? '#666' : COLORS.pink};
+  color: ${props => props.disabled ? '#999' : props.$secondary ? COLORS.pink : 'white'};
+  border: ${props => props.$secondary ? (props.disabled ? '#666' : `1px solid ${COLORS.pink}`) : 'none'};
   border-radius: 4px;
   cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
   transition: all 0.3s ease;
@@ -50,7 +50,7 @@ export const Button = styled.button<{ disabled: boolean, secondary?: boolean }>`
   opacity: ${props => props.disabled ? 0.7 : 1};
 
   &:hover {
-    background-color: ${props => props.disabled ? '#666' : props.secondary ? COLORS.pink + '22' : COLORS.pink + 'dd'};
+    background-color: ${props => props.disabled ? '#666' : props.$secondary ? COLORS.pink + '22' : COLORS.pink + 'dd'};
   }
 
   &:active {
@@ -291,6 +291,7 @@ export const titleTexts: FormDescriptor = {
   modelTau: 'Model Latency (ms)',
   modelTauStddev: 'Model Latency Std. Dev. (ms)',
   modelTofObservationStddev: 'Model Time-of-Flight Std. Dev. (ms)',
+  leastSquaresIterations: "Least-Squares iterations per measurement"
 }
 
 export const helpTexts: FormDescriptor = {
@@ -395,6 +396,9 @@ export const helpTexts: FormDescriptor = {
   This parameter controls the amount of additional unmodeled noise to expect for each time-of-flight measurement: more noise means measurements are less reliable.
 
   This measurement standard deviation is added to distance measurements within the Extended Kalman Filter measurement update.`,
+  leastSquaresIterations: `
+  The number of times to run the least-squares position estimation algorithm after each set of distance measurements.
+  `
 };
 
 

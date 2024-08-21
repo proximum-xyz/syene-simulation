@@ -22,7 +22,7 @@ const Map = () => {
   // const [worker, setWorker] = useState<Worker | null>(null);
 
   // const [simulation, setSimulation] = useState<Simulation>();
-  const [nodes, setNodes] = useState<Simulation["nodes"]>();
+  const [nodes, setNodes] = useState<Simulation["nodes"]>([]);
   const [stats, setStats] = useState<Simulation["stats"]>();
   // const [simulationInitialized, setSimulationInitialized] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -56,6 +56,9 @@ const Map = () => {
       await resetSimulation()
       // setSimulationInitialized(true);
     }
+
+    console.log('***', { config });
+
 
     const CHUNK_SIZE = 25; // Adjust based on performance
 

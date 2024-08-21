@@ -23,8 +23,7 @@ pub type OS = Const<10>;
 #[cfg(n_measurements = "10")]
 pub const N_MEASUREMENTS: usize = 10;
 
-// Minimum distance between nodes for a valid measurement
-const MINIMUM_DISTANCE: f64 = 1.0;
+pub const MINIMUM_DISTANCE: f64 = 1.0;
 
 // We use the same precision for all numbers
 type Precision = f64;

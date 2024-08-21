@@ -89,12 +89,3 @@ pub fn run_simulation_chunk(epochs: u32) -> Result<JsValue, JsValue> {
         Ok(serde_wasm_bindgen::to_value(&chunk_result)?)
     })
 }
-
-#[wasm_bindgen]
-pub fn get_final_results() -> Result<JsValue, JsValue> {
-    SIMULATION.with(|sim| {
-        let simulation = sim.borrow();
-        let simulation = simulation.as_ref().ok_or("Simulation not initialized")?;
-        Ok(serde_wasm_bindgen::to_value(&simulation)?)
-    })
-}

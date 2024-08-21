@@ -1,5 +1,7 @@
+use crate::kalman::N_MEASUREMENTS;
+use crate::types::SimulationConfig;
 use crate::{kalman::OS, types::Node};
-use log::trace;
+use log::{info, trace};
 use nalgebra::OVector;
 use nav_types::ECEF;
 use rand::prelude::*;
@@ -15,36 +17,32 @@ pub fn simulate_ping_pong_tof(
     true_beta: f64,
     true_tau: f64,
     n2: &Node,
-    beta_variance: f64,
-    tau_variance: f64,
+    config: &SimulationConfig,
     rng: &mut impl Rng,
 ) -> Result<f64, Box<dyn Error>> {
     let true_distance = (true_position - n2.true_position).norm();
 
-    let beta_dist = Normal::new(1.0, beta_variance.sqrt())?;
+    let beta_1 = Normal::new(true_beta, config.beta_variance.sqrt())?
+        .sample(rng)
+        .clamp(config.beta_min, config.beta_max);
 
-    // let beta_1 = beta_dist.sample(rng).clamp(0.0, 1.0) * true_beta;
-    // let beta_2 = beta_dist.sample(rng).clamp(0.0, 1.0) * n2.true_beta;
-    let beta_1 = 1.0;
-    let beta_2 = 1.0;
-    let tau_1 = 0.0;
-    let tau_2 = 0.0;
+    let beta_2 = Normal::new(n2.true_beta, config.beta_variance.sqrt())?
+        .sample(rng)
+        .clamp(config.beta_min, config.beta_max);
 
-    // let tau_1 = {
-    //     let tau_dist = LogNormal::new(true_tau.ln(), tau_variance.sqrt().ln())?;
-    //     tau_dist.sample(rng)
-    // };
+    let tau_1 = LogNormal::new(true_tau.ln(), config.tau_variance.sqrt().ln())?
+        .sample(rng)
+        .clamp(config.tau_min, config.tau_max);
 
-    // let tau_2 = {
-    //     let tau_dist = LogNormal::new(n2.true_tau.ln(), tau_variance.sqrt().ln())?;
-    //     tau_dist.sample(rng)
-    // };
+    let tau_2 = LogNormal::new(n2.true_tau.ln(), config.tau_variance.sqrt().ln())?
+        .sample(rng)
+        .clamp(config.tau_min, config.tau_max);
 
     let ping_time = true_distance / (C * beta_1) + tau_1;
     let pong_time = true_distance / (C * beta_2) + tau_2;
     let total_time = ping_time + pong_time;
 
-    trace!(
+    info!(
       "beta_1: {:.6}, tau_1: {:.9}, ping_time: {:.9}, beta_2: {:.6}, tau_2: {:.9}, pong_time: {:.9}",
       beta_1,
       tau_1,
@@ -54,10 +52,9 @@ pub fn simulate_ping_pong_tof(
       pong_time
   );
 
-    trace!(
+    info!(
         "true distance: {:.3}, measured time: {:.9}",
-        true_distance,
-        total_time,
+        true_distance, total_time,
     );
 
     Ok(total_time)
@@ -69,10 +66,7 @@ pub fn generate_measurements(
     true_tau: f64,
     my_node_index: Option<usize>,
     nodes: &[Node],
-    n_measurements: usize,
-    message_distance_max: f64,
-    beta_variance: f64,
-    tau_variance: f64,
+    config: &SimulationConfig,
 ) -> Result<(Vec<usize>, OVector<f64, OS>), Box<dyn Error>> {
     let mut rng = rand::thread_rng();
 
@@ -82,35 +76,35 @@ pub fn generate_measurements(
         .enumerate()
         .filter(|&(i, node)| {
             Some(i) != my_node_index
-                && true_position.distance(&node.true_position) <= message_distance_max
+                && true_position.distance(&node.true_position) <= config.message_distance_max
         })
         .collect();
 
-    if eligible_nodes.len() < n_measurements {
+    if eligible_nodes.len() < N_MEASUREMENTS {
         return Err(format!(
             "Not enough eligible nodes. Found {} but need {}",
             eligible_nodes.len(),
-            n_measurements
+            N_MEASUREMENTS
         )
         .into());
     }
 
-    // Randomly select n_measurements unique nodes
+    // Randomly select N_MEASUREMENTS unique nodes
     let selected_nodes = eligible_nodes
-        .choose_multiple(&mut rng, n_measurements)
+        .choose_multiple(&mut rng, N_MEASUREMENTS)
         .collect::<Vec<_>>();
 
     let their_indices: Vec<usize> = selected_nodes.iter().map(|&(i, _)| *i).collect();
-    let mut times = Vec::with_capacity(n_measurements);
+    let mut times = Vec::with_capacity(N_MEASUREMENTS);
 
-    for &(_, node) in &selected_nodes {
+    for &(i, node) in &selected_nodes {
+        assert!(my_node_index != Some(*i));
         times.push(simulate_ping_pong_tof(
             true_position,
             true_beta,
             true_tau,
             node,
-            beta_variance,
-            tau_variance,
+            config,
             &mut rng,
         )?);
     }

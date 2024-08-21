@@ -21,44 +21,66 @@
 // 	•	This gives you the estimated position of the user.
 
 use log::info;
-use nalgebra::{Const, Matrix3, OMatrix, OVector, Vector3};
+use nalgebra::{Const, OMatrix, OVector};
 use nav_types::{ECEF, WGS84};
 use std::error::Error;
 
-use crate::{kalman::OS, physics::C, types::Node};
+// The first measurement is used as a reference node
+pub const N_PARAMETERS: usize = N_MEASUREMENTS - 1;
+
+use crate::{
+    kalman::{N_MEASUREMENTS, OS},
+    physics::C,
+    types::{Node, SimulationConfig},
+};
 pub fn ls_estimate_position_ecef(
     initial_estimate: ECEF<f64>,
+    asserted_position: ECEF<f64>,
+    true_position: ECEF<f64>,
     measurements: &(Vec<usize>, OVector<f64, OS>),
     nodes: &[Node],
-    ls_model_beta: f64,
-    ls_model_tau: f64,
-    ls_tolerance: f64,
-    ls_iterations: usize,
+    config: &SimulationConfig,
 ) -> Result<ECEF<f64>, Box<dyn Error>> {
     let (their_indices, times) = measurements;
-    let mut estimate: ECEF<f64> = initial_estimate;
 
     if their_indices.len() < 4 {
         return Err("At least four nodes are required for 3D positioning.".into());
     }
 
-    for _ in 0..ls_iterations {
-        let mut a_matrix = OMatrix::<f64, Const<9>, Const<3>>::zeros();
-        let mut b_vector = OVector::<f64, Const<9>>::zeros();
+    let mut estimate = initial_estimate;
+
+    for _ in 0..config.ls_iterations {
+        let mut a_matrix = OMatrix::<f64, Const<N_PARAMETERS>, Const<3>>::zeros();
+        let mut b_vector = OVector::<f64, Const<N_PARAMETERS>>::zeros();
 
         let reference_node = &nodes[their_indices[0]];
-        let reference_distance = C * ls_model_beta * (times[0] - 2.0 * ls_model_tau);
+        let reference_distance =
+            (C * config.ls_model_beta * (times[0] - 2.0 * config.ls_model_tau)) / 2.0;
         let reference_distance_sq = reference_distance.powi(2);
 
-        for (i, &index) in their_indices.iter().enumerate().skip(1) {
-            let node = &nodes[index];
+        info!("measurements: {:#?}", measurements);
+
+        for (i, &node_index) in their_indices.iter().enumerate().skip(1) {
+            let node = &nodes[node_index];
             let diff_vec = OVector::<f64, Const<3>>::new(
                 node.ls_estimated_position.x() - reference_node.ls_estimated_position.x(),
                 node.ls_estimated_position.y() - reference_node.ls_estimated_position.y(),
                 node.ls_estimated_position.z() - reference_node.ls_estimated_position.z(),
             );
 
-            let distance = C * ls_model_beta * (times[i] - 2.0 * ls_model_tau);
+            let distance = ((C * config.ls_model_beta * (times[i] - 2.0 * config.ls_model_tau))
+                / 2.0)
+                // distance cannot be negative
+                .max(1.0);
+
+            let d_true = (true_position - node.true_position).norm();
+            info!(
+                "t: {:}\nd_meas: {:}\nd_real: {:}\npercentage:{:}%",
+                times[i],
+                distance,
+                d_true,
+                (distance / d_true) * 100.0
+            );
             let d_i_sq = distance.powi(2);
             let d = d_i_sq - reference_distance_sq;
 
@@ -71,17 +93,11 @@ pub fn ls_estimate_position_ecef(
         let pseudo_inverse = (a_transpose * a_matrix)
             .try_inverse()
             .ok_or("Failed to compute pseudoinverse")?;
-        let delta_estimate: OVector<f64, Const<3>> = pseudo_inverse * a_transpose * b_vector;
+        let x: OVector<f64, Const<3>> = pseudo_inverse * a_transpose * b_vector;
 
-        estimate = ECEF::new(
-            estimate.x() + delta_estimate[0],
-            estimate.y() + delta_estimate[1],
-            estimate.z() + delta_estimate[2],
-        );
+        info!("x{:#?}", x);
 
-        if delta_estimate.norm() < ls_tolerance {
-            break;
-        }
+        estimate = ECEF::new(x[0], x[1], x[2]);
     }
 
     // Ok(estimate)
@@ -95,5 +111,19 @@ pub fn ls_estimate_position_ecef(
     )
     .into();
 
-    Ok(clamped_estimate)
+    let init_wgs84: WGS84<f64> = initial_estimate.into();
+    let true_wgs84: WGS84<f64> = true_position.into();
+
+    let spring_displacement = (asserted_position - clamped_estimate) / 500.0;
+    let adjusted_estimate = clamped_estimate + spring_displacement;
+
+    // Ok(adjusted_estimate)
+
+    let final_estimate = initial_estimate + (adjusted_estimate - initial_estimate) / 10.0;
+
+    info!(
+        "initial:{:#?}\nest:{:#?}\nfinal:{:#?}\nwgs84 before: {:#?}\nwgs84 after:{:#?}\nwgs84 true:{:#?}",
+        initial_estimate, estimate, final_estimate, init_wgs84, wgs84_estimate, true_wgs84
+    );
+    Ok(final_estimate)
 }

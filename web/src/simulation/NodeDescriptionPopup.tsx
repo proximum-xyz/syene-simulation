@@ -41,13 +41,13 @@ export enum POSITION_TYPE {
 
 const formatState = (node: Node, positionType: POSITION_TYPE) => (
   `
-Latitude: ${rad2deg(node.true_wgs84.latitude).toFixed(2)}° ${positionType === POSITION_TYPE.kfEstimated && `(Est: ${rad2deg(node.kf_estimated_wgs84.latitude).toFixed(2)}°)`}
+Latitude: ${rad2deg(node.true_wgs84.latitude).toFixed(2)}° ${positionType === POSITION_TYPE.kfEstimated ? `(Est: ${rad2deg(node.kf_estimated_wgs84.latitude).toFixed(2)}°)` : ''}
 
-Longitude: ${rad2deg(node.true_wgs84.longitude).toFixed(2)}° ${positionType === POSITION_TYPE.kfEstimated && `(Est: ${rad2deg(node.kf_estimated_wgs84.longitude).toFixed(2)}°)`}
+Longitude: ${rad2deg(node.true_wgs84.longitude).toFixed(2)}° ${positionType === POSITION_TYPE.kfEstimated ? `(Est: ${rad2deg(node.kf_estimated_wgs84.longitude).toFixed(2)}°)` : ''}
 
-β: ${node.true_beta.toFixed(2)} c ${positionType === POSITION_TYPE.kfEstimated && `(Est: ${node.kf_estimated_beta.toFixed(2)} c)`}
+β: ${node.true_beta.toFixed(2)} c ${positionType === POSITION_TYPE.kfEstimated ? `(Est: ${node.kf_estimated_beta.toFixed(2)} c)` : ''}
 
-τ: ${(node.true_tau * 1000).toFixed(2)} ms ${positionType === POSITION_TYPE.kfEstimated && `(Est: ${(node.kf_estimated_tau * 1000).toFixed(2)} ms)`}
+τ: ${(node.true_tau * 1000).toFixed(2)} ms ${positionType === POSITION_TYPE.kfEstimated ? `(Est: ${(node.kf_estimated_tau * 1000).toFixed(2)} ms)` : ''}
 `
 )
 

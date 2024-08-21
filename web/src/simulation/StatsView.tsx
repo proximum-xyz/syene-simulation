@@ -32,7 +32,7 @@ const Stats = ({ stats }: { stats: Simulation['stats'] }) => {
   const data = [];
   for (let i = 0; i < stats.kf_estimation_rms_error.length; i++) {
     data.push({
-      epoch: i,
+      epoch: i + 1,
       // convert from m to km
       kfError: stats.kf_estimation_rms_error[i] / 1000,
       lsError: stats.ls_estimation_rms_error[i] / 1000,
