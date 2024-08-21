@@ -42,7 +42,7 @@ pub fn simulate_ping_pong_tof(
     let pong_time = true_distance / (C * beta_2) + tau_2;
     let total_time = ping_time + pong_time;
 
-    info!(
+    trace!(
       "beta_1: {:.6}, tau_1: {:.9}, ping_time: {:.9}, beta_2: {:.6}, tau_2: {:.9}, pong_time: {:.9}",
       beta_1,
       tau_1,
@@ -52,9 +52,10 @@ pub fn simulate_ping_pong_tof(
       pong_time
   );
 
-    info!(
+    trace!(
         "true distance: {:.3}, measured time: {:.9}",
-        true_distance, total_time,
+        true_distance,
+        total_time,
     );
 
     Ok(total_time)

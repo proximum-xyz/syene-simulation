@@ -6,18 +6,18 @@ import { SectionHeader1, FormWrapper, FormField, Button, HelpTextPopup, HelpText
 import ReactMarkdown from 'react-markdown';
 
 const defaultSimulationConfig = {
-  nNodes: 25,
+  nNodes: 100,
   nMeasurements: 10,
   nEpochs: 100,
   h3Resolution: 7,
   // km
-  assertedPositionStddev: 100,
+  assertedPositionStddev: 1000,
   // %c
-  betaRange: [0.4, 0.6],
+  betaRange: [0.2, 0.8],
   // %c
   betaStddev: 0.001,
   // ms
-  tauRange: [5, 15],
+  tauRange: [2, 30],
   // ms
   tauStddev: 1,
   // km
@@ -29,7 +29,7 @@ const defaultSimulationConfig = {
   // %c
   modelBetaStddev: 0.001,
   // ms
-  modelTau: 10,
+  modelTau: 15,
   // ms
   modelTauStddev: 0.01,
   // ms

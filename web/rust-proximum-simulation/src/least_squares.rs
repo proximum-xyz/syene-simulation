@@ -20,110 +20,228 @@
 // x = (A^T A)^{-1} A^T b
 // 	•	This gives you the estimated position of the user.
 
-use log::info;
-use nalgebra::{Const, OMatrix, OVector};
-use nav_types::{ECEF, WGS84};
-use std::error::Error;
+// use log::trace;
+// use nalgebra::{Const, OMatrix, OVector};
+// use nav_types::{ECEF, WGS84};
+// use std::error::Error;
 
-// The first measurement is used as a reference node
-pub const N_PARAMETERS: usize = N_MEASUREMENTS - 1;
+// // The first measurement is used as a reference node
+// pub const N_PARAMETERS: usize = N_MEASUREMENTS - 1;
+
+// use crate::{
+//     kalman::{N_MEASUREMENTS, OS},
+//     physics::C,
+//     types::{Node, SimulationConfig},
+// };
+
+// pub fn ls_estimate_position_ecef(
+//     initial_estimate: ECEF<f64>,
+//     asserted_position: ECEF<f64>,
+//     true_position: ECEF<f64>,
+//     measurements: &(Vec<usize>, OVector<f64, OS>),
+//     nodes: &[Node],
+//     config: &SimulationConfig,
+// ) -> Result<ECEF<f64>, Box<dyn Error>> {
+//     let (their_indices, times) = measurements;
+
+//     if their_indices.len() < 4 {
+//         return Err("At least four nodes are required for 3D positioning.".into());
+//     }
+
+//     let mut estimate = initial_estimate;
+
+//     for _ in 0..config.ls_iterations {
+//         let mut a_matrix = OMatrix::<f64, Const<N_PARAMETERS>, Const<3>>::zeros();
+//         let mut b_vector = OVector::<f64, Const<N_PARAMETERS>>::zeros();
+
+//         let reference_node = &nodes[their_indices[0]];
+//         let reference_distance =
+//             (C * config.ls_model_beta * (times[0] - 2.0 * config.ls_model_tau)) / 2.0;
+//         let reference_distance_sq = reference_distance.powi(2);
+
+//         trace!("measurements: {:#?}", measurements);
+
+//         for (i, &node_index) in their_indices.iter().enumerate().skip(1) {
+//             let node = &nodes[node_index];
+//             let diff_vec = OVector::<f64, Const<3>>::new(
+//                 node.ls_estimated_position.x() - reference_node.ls_estimated_position.x(),
+//                 node.ls_estimated_position.y() - reference_node.ls_estimated_position.y(),
+//                 node.ls_estimated_position.z() - reference_node.ls_estimated_position.z(),
+//             );
+
+//             let distance = ((C * config.ls_model_beta * (times[i] - 2.0 * config.ls_model_tau))
+//                 / 2.0)
+//                 // distance cannot be negative
+//                 .max(1.0);
+
+//             let d_true = (true_position - node.true_position).norm();
+//             trace!(
+//                 "t: {:}\nd_meas: {:}\nd_real: {:}\npercentage:{:}%",
+//                 times[i],
+//                 distance,
+//                 d_true,
+//                 (distance / d_true) * 100.0
+//             );
+//             let d_i_sq = distance.powi(2);
+//             let d = d_i_sq - reference_distance_sq;
+
+//             a_matrix.set_row(i - 1, &(-2.0 * diff_vec.transpose()));
+//             b_vector[i - 1] = d;
+//         }
+
+//         // Solve Ax = b using pseudoinverse
+//         let a_transpose = a_matrix.transpose();
+//         let pseudo_inverse = (a_transpose * a_matrix)
+//             .try_inverse()
+//             .ok_or("Failed to compute pseudoinverse")?;
+//         let x: OVector<f64, Const<3>> = pseudo_inverse * a_transpose * b_vector;
+
+//         trace!("x{:#?}", x);
+
+//         estimate = ECEF::new(x[0], x[1], x[2]);
+//     }
+
+//     Ok(estimate)
+
+use log::trace;
+use nalgebra::{Const, OMatrix, OVector, Vector3};
+use nav_types::ECEF;
+use std::error::Error;
 
 use crate::{
     kalman::{N_MEASUREMENTS, OS},
     physics::C,
     types::{Node, SimulationConfig},
 };
+
+// WGS84 Earth radius in meters
+const EARTH_RADIUS: f64 = 6_371_000.0;
+
 pub fn ls_estimate_position_ecef(
     initial_estimate: ECEF<f64>,
     asserted_position: ECEF<f64>,
-    true_position: ECEF<f64>,
+    _true_position: ECEF<f64>,
     measurements: &(Vec<usize>, OVector<f64, OS>),
     nodes: &[Node],
     config: &SimulationConfig,
 ) -> Result<ECEF<f64>, Box<dyn Error>> {
-    let (their_indices, times) = measurements;
+    let (node_indices, measured_times) = measurements;
+    let n = node_indices.len();
 
-    if their_indices.len() < 4 {
-        return Err("At least four nodes are required for 3D positioning.".into());
+    if n < 4 {
+        return Err("At least 4 measurements are required for 3D position estimation".into());
     }
 
-    let mut estimate = initial_estimate;
+    // Scale initial estimate and node positions
+    let mut x = Vector3::<f64>::new(
+        initial_estimate.x(),
+        initial_estimate.y(),
+        initial_estimate.z(),
+    ) / EARTH_RADIUS;
 
-    for _ in 0..config.ls_iterations {
-        let mut a_matrix = OMatrix::<f64, Const<N_PARAMETERS>, Const<3>>::zeros();
-        let mut b_vector = OVector::<f64, Const<N_PARAMETERS>>::zeros();
+    let scaled_nodes: Vec<OVector<f64, Const<3>>> = nodes
+        .iter()
+        .map(|node| {
+            Vector3::<f64>::new(
+                node.ls_estimated_position.x(),
+                node.ls_estimated_position.y(),
+                node.ls_estimated_position.z(),
+            ) / EARTH_RADIUS
+        })
+        .collect();
 
-        let reference_node = &nodes[their_indices[0]];
-        let reference_distance =
-            (C * config.ls_model_beta * (times[0] - 2.0 * config.ls_model_tau)) / 2.0;
-        let reference_distance_sq = reference_distance.powi(2);
+    let max_iterations = 10;
+    let tolerance = 1e-9;
 
-        info!("measurements: {:#?}", measurements);
+    // Levenberg-Marquardt damping
+    let mut lambda = 1.0f64;
 
-        for (i, &node_index) in their_indices.iter().enumerate().skip(1) {
-            let node = &nodes[node_index];
-            let diff_vec = OVector::<f64, Const<3>>::new(
-                node.ls_estimated_position.x() - reference_node.ls_estimated_position.x(),
-                node.ls_estimated_position.y() - reference_node.ls_estimated_position.y(),
-                node.ls_estimated_position.z() - reference_node.ls_estimated_position.z(),
-            );
+    trace!("Initial: |x| = {}", x.norm(),);
 
-            let distance = ((C * config.ls_model_beta * (times[i] - 2.0 * config.ls_model_tau))
-                / 2.0)
-                // distance cannot be negative
-                .max(1.0);
+    for iteration in 0..max_iterations {
+        let mut h = OMatrix::<f64, Const<N_MEASUREMENTS>, Const<3>>::zeros();
+        let mut z = OVector::<f64, OS>::zeros();
 
-            let d_true = (true_position - node.true_position).norm();
-            info!(
-                "t: {:}\nd_meas: {:}\nd_real: {:}\npercentage:{:}%",
-                times[i],
-                distance,
-                d_true,
-                (distance / d_true) * 100.0
-            );
-            let d_i_sq = distance.powi(2);
-            let d = d_i_sq - reference_distance_sq;
+        for i in 0..n {
+            let node_pos = &scaled_nodes[node_indices[i]];
+            let dx = &x - node_pos;
+            let r = dx.norm() * EARTH_RADIUS; // Unscale for time calculation
 
-            a_matrix.set_row(i - 1, &(-2.0 * diff_vec.transpose()));
-            b_vector[i - 1] = d;
+            // Compute the Jacobian (keep it scaled)
+            h.set_row(i, &(dx.transpose() / dx.norm()));
+
+            // Compute the residual
+            let predicted_time = 2.0 * (r / (config.ls_model_beta * C) + config.ls_model_tau);
+            z[i] = measured_times[i] - predicted_time;
         }
 
-        // Solve Ax = b using pseudoinverse
-        let a_transpose = a_matrix.transpose();
-        let pseudo_inverse = (a_transpose * a_matrix)
+        // Scale the Jacobian to match the time units
+        let scaled_h = h * (EARTH_RADIUS / (config.ls_model_beta * C));
+
+        // Solve the normal equations with Levenberg-Marquardt damping
+        let h_t = scaled_h.transpose();
+        let delta_x = (h_t * &scaled_h + lambda * nalgebra::DMatrix::identity(3, 3))
             .try_inverse()
-            .ok_or("Failed to compute pseudoinverse")?;
-        let x: OVector<f64, Const<3>> = pseudo_inverse * a_transpose * b_vector;
+            .ok_or("Matrix inversion failed")?
+            * h_t
+            * z;
 
-        info!("x{:#?}", x);
+        // Constrain the update to keep the object near the Earth's surface
+        let new_x = x + delta_x;
+        let new_x_norm = new_x.norm();
+        let scale_factor = if new_x_norm > 1.01 || new_x_norm < 0.99 {
+            1.0 / new_x_norm
+        } else {
+            1.0
+        };
 
-        estimate = ECEF::new(x[0], x[1], x[2]);
+        // Apply the constrained update
+        let constrained_delta_x = (new_x * scale_factor - x) / 2.0; // Trust region: limit to half the full step
+        x += constrained_delta_x;
+
+        trace!(
+            "Iteration {}: |x| = {}, |delta_x| = {}",
+            iteration + 1,
+            x.norm(),
+            constrained_delta_x.norm()
+        );
+
+        if constrained_delta_x.norm() < tolerance {
+            trace!("Converged after {} iterations", iteration + 1);
+            break;
+        }
+
+        // Adjust Levenberg-Marquardt damping factor
+        if constrained_delta_x.norm() < delta_x.norm() {
+            lambda *= 10.0; // Increase damping if the step was reduced
+        } else {
+            lambda = (lambda / 10.0).max(1e-7); // Decrease damping, but not below a minimum value
+        }
+
+        trace!(
+            "Iteration {}: |x| = {}, z={}, |delta_x| = {}",
+            iteration + 1,
+            x.norm(),
+            z,
+            delta_x.norm()
+        );
+
+        if delta_x.norm() < tolerance {
+            trace!("Converged after {} iterations", iteration + 1);
+            // Unscale before returning
+            break;
+        }
     }
 
-    // Ok(estimate)
-
-    let wgs84_estimate: WGS84<f64> = estimate.into();
-
-    let clamped_estimate: ECEF<f64> = WGS84::from_radians_and_meters(
-        wgs84_estimate.latitude_radians(),
-        wgs84_estimate.longitude_radians(),
-        0.0,
-    )
-    .into();
-
-    let init_wgs84: WGS84<f64> = initial_estimate.into();
-    let true_wgs84: WGS84<f64> = true_position.into();
-
-    let spring_displacement = (asserted_position - clamped_estimate) / 500.0;
-    let adjusted_estimate = clamped_estimate + spring_displacement;
-
-    // Ok(adjusted_estimate)
-
-    let final_estimate = initial_estimate + (adjusted_estimate - initial_estimate) / 10.0;
-
-    info!(
-        "initial:{:#?}\nest:{:#?}\nfinal:{:#?}\nwgs84 before: {:#?}\nwgs84 after:{:#?}\nwgs84 true:{:#?}",
-        initial_estimate, estimate, final_estimate, init_wgs84, wgs84_estimate, true_wgs84
+    // spring constant back to asserted location.
+    let estimate = ECEF::new(
+        x[0] * EARTH_RADIUS,
+        x[1] * EARTH_RADIUS,
+        x[2] * EARTH_RADIUS,
     );
-    Ok(final_estimate)
+
+    let spring_direction = asserted_position - estimate;
+    // let force = spring_direction.norm();
+
+    return Ok(estimate + spring_direction / 500.0);
 }
