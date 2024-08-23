@@ -35,7 +35,7 @@ const SimulationOverlay = ({
 
   return (
     <div className="fixed top-0 left-0 z-50 max-h-screen overflow-y-auto">
-      <div className="w-full sm:w-96 md:w-[500px] p-4">
+      <div className="w-full sm:w-96 md:w-[500px] p-4 pb-24">
         <button
           onClick={() => navigate(PATHS.home)}
           className="text-5xl text-white hover:text-white/80 mb-4"
