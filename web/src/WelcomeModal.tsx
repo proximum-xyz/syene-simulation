@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { COLORS, PATHS } from './types';
+import { PATHS } from './types';
 import { Link } from './Link';
 import { useNavigate } from 'react-router-dom';
 import Map from './Map';
