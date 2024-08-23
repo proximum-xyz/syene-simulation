@@ -1,103 +1,17 @@
 
-import React, { Dispatch, SetStateAction } from 'react';
-import { COLORS, SimulationParamFields } from '../types';
+import React from 'react';
+import { SimulationParamFields } from '../types';
 import styled from 'styled-components';
-import Slider from 'rc-slider';
-import { Controller, Control, UseFormWatch } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import 'rc-slider/assets/index.css';
+import ReactMarkdown from 'react-markdown';
+import Slider from 'rc-slider';
 
 type FieldKeys = keyof SimulationParamFields;
 
 type FormDescriptor = {
   [x in FieldKeys]: string;
 };
-
-export const SectionHeader1 = styled.h4`
-  font-size: 1rem;
-  margin-top: 16px;
-  margin-bottom: 8px;
-  color: #00ff9f;
-`;
-
-
-export const SectionHeader2 = styled.h4`
-  font-size: 1rem;
-  margin-top: 16px;
-  margin-bottom: 8px;
-  color: #ff4081;
-`;
-
-export const FormWrapper = styled.div`
-  background-color: #1f1f1fdd;
-  padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  color: #ffffff;
-  max-width: 300px;
-  width: 100%;
-  box-sizing: border-box;
-`;
-
-export const Button = styled.button<{ disabled: boolean, $secondary?: boolean }>`
-  padding: 8px 16px;
-  background-color: ${props => props.$secondary ? 'transparent' : props.disabled ? '#666' : COLORS.pink};
-  color: ${props => props.disabled ? '#999' : props.$secondary ? COLORS.pink : 'white'};
-  border: ${props => props.$secondary ? (props.disabled ? '#666' : `1px solid ${COLORS.pink}`) : 'none'};
-  border-radius: 4px;
-  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-  transition: all 0.3s ease;
-  font-weight: bold;
-  opacity: ${props => props.disabled ? 0.7 : 1};
-
-  &:hover {
-    background-color: ${props => props.disabled ? '#666' : props.$secondary ? COLORS.pink + '22' : COLORS.pink + 'dd'};
-  }
-
-  &:active {
-    transform: ${props => props.disabled ? 'none' : 'scale(0.98)'};
-  }
-`;
-
-export const ProgressBar = styled.div<{ progress: number }>`
-  width: 100%;
-  height: 4px;
-  background-color: #444;
-  margin-top: 10px;
-
-  &::after {
-    content: '';
-    display: block;
-    height: 100%;
-    width: ${props => props.progress}%;
-    background-color: #00ff9f;
-    transition: width 0.3s ease;
-  }
-`;
-
-export const ButtonGroup = styled.div`
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-`;
-
-const FormGroup = styled.div`
-  margin-bottom: 12px;
-`;
-
-const Label = styled.label`
-  display: block;
-  margin-bottom: 4px;
-  font-weight: bold;
-  color: #ffffff;
-`;
-
-const ReadOnlyValue = styled.div`
-  padding: 4px 8px;
-  background-color: #222222;
-  border-radius: 4px;
-  color: #ffffff;
-  cursor: default !important;
-`;
 
 export const Input = styled.input<{ disabled?: boolean }>`
   width: 100%;
@@ -119,12 +33,6 @@ export const Input = styled.input<{ disabled?: boolean }>`
     border-color: ${props => props.disabled ? '#444444' : '#777777'};
     box-shadow: ${props => props.disabled ? 'none' : '0 0 0 2px rgba(85, 85, 85, 0.3)'};
   }
-`;
-
-const HelpIcon = styled.span`
-  margin-left: 5px;
-  cursor: pointer;
-  color: #00b8ff;
 `;
 
 const SliderWrapper = styled.div`
@@ -153,41 +61,30 @@ export const SliderInput = styled.input<{ disabled?: boolean }>`
   }
 `;
 
-export const HelpTextPopup = styled.div`
-  position: fixed;
-  top: 45%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: #1f1f1f;
-  padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  color: #ffffff;
-  max-width: 600px;
-  width: 100%;
-  box-sizing: border-box;
-  z-index: 1000000;
-`;
+interface HelpTextPopupProps {
+  title: string;
+  content: string;
+  onClose: () => void;
+}
 
-export const HelpTextTitle = styled.h2`
-  margin-top: 0;
-  color: #00ff9f;
-`;
-
-export const HelpTextContent = styled.div`
-  margin-bottom: 0;
-  font-size:1rem;
-`;
-
-export const CloseButton = styled.button`
-  padding: 6px 12px;
-  background-color: ${COLORS.pink};
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 12px;
-`;
+export const HelpTextPopup: React.FC<HelpTextPopupProps> = ({ title, content, onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+        <h2 className="text-xl font-bold text-green-400 mb-4">{title}</h2>
+        <div className="text-white mb-6">
+          <ReactMarkdown>{content}</ReactMarkdown>
+        </div>
+        <button
+          onClick={onClose}
+          className="px-4 py-2 bg-custom-pink text-white rounded-md hover:bg-custom-pink/80"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const CustomSlider = styled(Slider) <{ disabled?: boolean }>`
 .rc-slider-rail {
@@ -256,16 +153,16 @@ export const titleTexts: FormDescriptor = {
   nMeasurements: 'Measurements',
   nEpochs: 'Epochs',
   h3Resolution: 'H3 Resolution',
-  assertedPositionStddev: 'Claimed Position Dishonesty (σ km)',
+  assertedPositionStddev: 'Position Honesty (σ km)',
   betaRange: 'β: Message Speed (% c)',
   betaStddev: 'Message Speed Std. Dev.',
   tauRange: 'τ: Latency (ms)',
   tauStddev: "Latency Std. Dev. (ms)",
   messageDistanceMax: 'Message Range (km)',
   modelPositionStddev: 'Estimator State Std. Dev. (km)',
-  modelBeta: 'Model Message Speed (% c)',
+  modelBeta: 'β: Model Msg Speed (% c)',
   modelBetaStddev: 'Model Message Speed Std. Dev. (% c)',
-  modelTau: 'Model Latency (ms)',
+  modelTau: 'τ: Model Latency (ms)',
   modelTauStddev: 'Model Latency Std. Dev. (ms)',
   modelTofObservationStddev: 'Model Time-of-Flight Std. Dev. (ms)',
   leastSquaresIterations: "Least-Squares iterations per measurement"
@@ -380,14 +277,23 @@ export const helpTexts: FormDescriptor = {
 
 
 interface FieldOptions {
-  min?: number,
-  max?: number,
-  step?: number,
-  slider?: boolean,
-  readonly?: boolean
+  min?: number;
+  max?: number;
+  step?: number;
+  slider?: boolean;
+  readonly?: boolean;
 }
 
-export const FormField = ({
+interface FormFieldProps {
+  name: keyof SimulationParamFields;
+  control: any;
+  watch: any;
+  setShowHelp: (name: keyof SimulationParamFields | undefined) => void;
+  options?: FieldOptions;
+  disabled?: boolean;
+}
+
+export const FormField: React.FC<FormFieldProps> = ({
   name,
   control,
   watch,
@@ -398,22 +304,28 @@ export const FormField = ({
     readonly: false
   },
   disabled = false
-}: {
-  name: FieldKeys
-  control: Control<SimulationParamFields, any>,
-  watch: UseFormWatch<SimulationParamFields>,
-  setShowHelp: Dispatch<SetStateAction<keyof SimulationParamFields | undefined>>,
-  options?: FieldOptions,
-  disabled?: boolean
 }) => {
   const numericController = () => (
-    options.readonly ? <ReadOnlyValue>{watch(name)}</ReadOnlyValue>
-      :
+    options.readonly ? (
+      <div className="bg-gray-700 p-1 rounded text-sm">{watch(name)}</div>
+    ) : (
       <Controller
         name={name}
         control={control}
-        render={({ field }) => <Input type="number" min={options.min} max={options.max} step={options.step} {...field as any} disabled={disabled} />}
-      />);
+        render={({ field }) => (
+          <input
+            type="number"
+            className="w-full bg-gray-700 text-white p-1 rounded text-sm"
+            min={options.min}
+            max={options.max}
+            step={options.step}
+            {...field}
+            disabled={disabled}
+          />
+        )}
+      />
+    )
+  );
 
   const sliderController = () => {
     const [minValue, maxValue] = watch(name) as any;
@@ -471,14 +383,18 @@ export const FormField = ({
   };
 
   return (
-    <>
-      <FormGroup>
-        <Label>
-          {titleTexts[name]}
-          <HelpIcon onClick={() => setShowHelp(name)}>&#9432;</HelpIcon>
-        </Label>
-        {options.slider ? sliderController() : numericController()}
-      </FormGroup>
-    </>
-  )
-}
+    <div className="mb-1">
+      <label className="block mb-1 text-sm font-medium">
+        {titleTexts[name]}
+        <button
+          type="button"
+          className="ml-1 text-xs text-custom-blue hover:text-custom-blue-light"
+          onClick={() => setShowHelp(name)}
+        >
+          ?
+        </button>
+      </label>
+      {options.slider ? sliderController() : numericController()}
+    </div>
+  );
+};

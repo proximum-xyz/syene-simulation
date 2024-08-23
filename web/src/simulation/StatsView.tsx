@@ -10,88 +10,54 @@ import {
   Label,
 } from 'recharts';
 import { COLORS, Simulation } from '../types';
-import styled from 'styled-components';
 
-// export interface SimulationStats {
-//   rmsError: number;
-// }
+const StatsView = ({ stats }: { stats: Simulation['stats'] }) => {
+  const data = stats.kf_estimation_rms_error.map((_, i) => ({
+    epoch: i + 1,
+    // convert from m to km
+    kfError: stats.kf_estimation_rms_error[i] / 1000,
+    lsError: stats.ls_estimation_rms_error[i] / 1000,
+    assertedError: stats.assertion_rms_error[i] / 1000,
+  }));
 
-const StatsContainer = styled.div`
-background-color: #1f1f1fdd;
-  padding: 20px;
-  width: 100%;
-  box-sizing: border-box;
-`;
-
-const StatsTitle = styled.h2`
-  color: #fff;
-  margin-bottom: 20px;
-`;
-
-const Stats = ({ stats }: { stats: Simulation['stats'] }) => {
-  const data = [];
-  for (let i = 0; i < stats.kf_estimation_rms_error.length; i++) {
-    data.push({
-      epoch: i + 1,
-      // convert from m to km
-      kfError: stats.kf_estimation_rms_error[i] / 1000,
-      lsError: stats.ls_estimation_rms_error[i] / 1000,
-      assertedError: stats.assertion_rms_error[i] / 1000,
-    });
-  }
-
-  const formatTooltipValue = (value: number) => {
-    return `${value.toFixed(2)} km`;
-  };
+  const formatTooltipValue = (value: number) => `${value.toFixed(2)} km`;
 
   return (
-    <StatsContainer>
-      <StatsTitle>Position Error</StatsTitle>
-      <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={data} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
-          <CartesianGrid stroke="#444" strokeDasharray="5 5" />
-          <XAxis dataKey="epoch" tick={{ fill: '#fff' }}>
-            <Label value="Epoch" position="insideBottom" offset={-10} style={{ fill: '#fff' }} />
-          </XAxis>
-          <YAxis tick={{ fill: '#fff' }}>
-            <Label value="RMS Error (km)" position="insideBottom" angle={-90} offset={20} style={{ fill: '#fff' }} />
-          </YAxis>
-          <Tooltip
-            contentStyle={{ backgroundColor: '#1d1d1d', color: '#fff' }}
-            formatter={formatTooltipValue}
-          />
-          {/* <Legend wrapperStyle={{ color: '#fff' }} /> */}
-          {/* <Line
-            type="monotone"
-            dataKey="kfError"
-            stroke={COLORS.blue}
-            name="Kalman Filter Err."
-            // dot={{ fill: '#333', radius: 0 }}
-
-            dot={{ fill: '#00000000', radius: 0, stroke: "#00000000" }}
-          // activeDot={{ fill: '#00b8ff', stroke: '#00b8ff', strokeWidth: 2, r: 6 }}
-          /> */}
-          <Line
-            type="monotone"
-            dataKey="lsError"
-            stroke={COLORS.green}
-            name="Least Squares Err."
-
-            dot={{ fill: '#00000000', radius: 0, stroke: "#00000000" }}
-          // dot={{ fill: '#333', radius: 0 }}
-          // activeDot={{ fill: '#00b8ff', stroke: '#00b8ff', strokeWidth: 2, r: 6 }}
-          />
-          <Line
-            type="monotone"
-            dataKey="assertedError"
-            stroke={COLORS.pink}
-            name="Asserted Position Err."
-            dot={{ fill: '#00000000', radius: 0, stroke: "#00000000" }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </StatsContainer>
+    <div className="bg-gray-900 bg-opacity-80 p-5 w-full box-border min-w-[350px]">
+      <h2 className="text-white text-xl font-bold mb-5">Position Error</h2>
+      <div className="w-full h-[400px]">
+        <ResponsiveContainer>
+          <LineChart data={data} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
+            <CartesianGrid stroke="#444" strokeDasharray="5 5" />
+            <XAxis dataKey="epoch" tick={{ fill: '#fff' }}>
+              <Label value="Epoch" position="insideBottom" offset={-10} style={{ fill: '#fff' }} />
+            </XAxis>
+            <YAxis tick={{ fill: '#fff' }}>
+              <Label value="RMS Error (km)" position="insideLeft" angle={-90} offset={0} style={{ fill: '#fff' }} />
+            </YAxis>
+            <Tooltip
+              contentStyle={{ backgroundColor: '#1d1d1d', color: '#fff' }}
+              formatter={formatTooltipValue}
+            />
+            <Line
+              type="monotone"
+              dataKey="lsError"
+              stroke={COLORS.green}
+              name="Least Squares Err."
+              dot={{ fill: '#00000000', radius: 0, stroke: "#00000000" }}
+            />
+            <Line
+              type="monotone"
+              dataKey="assertedError"
+              stroke={COLORS.pink}
+              name="Asserted Position Err."
+              dot={{ fill: '#00000000', radius: 0, stroke: "#00000000" }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 };
 
-export default Stats;
+export default StatsView;

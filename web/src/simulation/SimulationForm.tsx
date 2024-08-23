@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CompilerParams, SimulationParamFields, SimulationConfig } from '../types';
-import { SectionHeader1, FormWrapper, FormField, Button, HelpTextPopup, HelpTextTitle, HelpTextContent, CloseButton, titleTexts, helpTexts, ProgressBar, ButtonGroup } from './SimulationFormComponents';
-
-import ReactMarkdown from 'react-markdown';
+import { FormField, HelpTextPopup, titleTexts, helpTexts } from './SimulationFormComponents';
 
 const defaultSimulationConfig = {
   nNodes: 100,
@@ -61,6 +59,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
   const [canEditForm, setCanEditForm] = useState(true);
   const [hasSimulated, setHasSimulated] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [showHelp, setShowHelp] = useState<keyof SimulationParamFields>();
 
   const parseFields = (params: SimulationParamFields): SimulationConfig => {
@@ -144,59 +143,87 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
   };
 
   return (
-    <FormWrapper>
-      <h2>Proximum Simulation</h2>
-      <form onSubmit={handleSubmit(onSubmit as any)}>
-        <FormField name='nNodes' control={control} watch={watch} setShowHelp={setShowHelp} disabled={!canEditForm} options={{ min: parseInt(compilerParams.n_measurements) + 1 }} />
-        <FormField name='nEpochs' control={control} watch={watch} setShowHelp={setShowHelp} disabled={!canEditForm} />
-        <FormField name='nMeasurements' control={control} watch={watch} setShowHelp={setShowHelp} options={{ readonly: true }} disabled={!canEditForm} />
+    <div className="bg-gray-900 bg-opacity-80 p-4 rounded-lg shadow-lg text-white w-full">
+      <h2 className="text-xl font-bold mb-2">Proximum Simulation</h2>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <FormField name='nNodes' control={control} watch={watch} setShowHelp={setShowHelp} disabled={!canEditForm} options={{ min: parseInt(compilerParams.n_measurements) + 1 }} />
+          <FormField name='nEpochs' control={control} watch={watch} setShowHelp={setShowHelp} disabled={!canEditForm} options={{ min: 1, max: 10000 }} />
+        </div>
+        {/* <FormField name='nMeasurements' control={control} watch={watch} setShowHelp={setShowHelp} options={{ readonly: true }} disabled={!canEditForm} /> */}
 
-        <SectionHeader1>Physical Parameters</SectionHeader1>
-        <FormField name='assertedPositionStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 10000 }} disabled={!canEditForm} />
-        <FormField name='betaRange' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 1, step: 0.01, slider: true }} disabled={!canEditForm} />
-        {/* <FormField name='betaStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0.01, max: 1, step: 0.01 }} /> */}
-        <FormField name='tauRange' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 100, step: 0.001, slider: true }} disabled={!canEditForm} />
-        {/* <FormField name='tauStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0.001, max: 10000, step: 0.001 }} /> */}
-        <FormField name='messageDistanceMax' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 100, max: 13000 }} disabled={!canEditForm} />
 
-        <SectionHeader1>Estimation Parameters</SectionHeader1>
-        <FormField name='modelTau' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 100000, step: 0.001 }} disabled={!canEditForm} />
-        <FormField name='modelBeta' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 1, step: 0.01 }} disabled={!canEditForm} />
-        {/* <SectionHeader1>Model Parameters</SectionHeader1>
-        <FormField name='modelPositionStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0.0, step: 0.001 }} />
-        <FormField name='modelBetaStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 0.5, step: 0.01 }} />
-        <FormField name='modelTauStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 100000, step: 0.001 }} />
-        <FormField name='modelTofObservationStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0.0, step: 0.001 }} /> */}
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="text-sm text-custom-blue hover:text-custom-blue/80 transition-colors duration-150 ease-in-out mt-2 focus:outline-none"
+        >
+          {showAdvanced ? '▲ Hide Advanced' : '▼ Show Advanced'}
+        </button>
 
-        <ButtonGroup>
-          <Button
+        {showAdvanced && (
+          <>
+            <h3 className="text-lg font-semibold mt-2 mb-1 text-white/60">Physical Parameters</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <FormField name='assertedPositionStddev' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 10000 }} disabled={!canEditForm} />
+              <FormField name='messageDistanceMax' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 100, max: 13000 }} disabled={!canEditForm} />
+            </div>
+            <FormField name='betaRange' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 1, step: 0.01, slider: true }} disabled={!canEditForm} />
+            <FormField name='tauRange' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 100, step: 0.001, slider: true }} disabled={!canEditForm} />
+
+            <h3 className="text-lg font-semibold mt-2 mb-1 text-white/60">Estimation Parameters</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <FormField name='modelTau' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 100000, step: 0.001 }} disabled={!canEditForm} />
+              <FormField name='modelBeta' control={control} watch={watch} setShowHelp={setShowHelp} options={{ min: 0, max: 1, step: 0.01 }} disabled={!canEditForm} />
+            </div>
+          </>
+        )}
+
+        <div className="flex items-center justify-between mt-4 space-x-2">
+          <button
             type="submit"
             disabled={isSimulating}
+            className={`
+              px-3 py-1 rounded text-sm font-medium transition-all duration-150 ease-in-out
+              ${isSimulating
+                ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                : 'text-custom-green hover:text-custom-green/80 border-custom-green hover:border-custom-green/80 border'
+              }
+            `}
           >
-            Run Simulation
-          </Button>
-          {hasSimulated && <Button
-            type="button"
-            $secondary={true}
-            disabled={isSimulating}
-            onClick={handleResetSimulation}
-          >
-            Reset
-          </Button>}
-        </ButtonGroup>
-        {isSimulating && <ProgressBar progress={progress} />}
+            {isSimulating ? 'Simulating...' : 'Run Simulation'}
+          </button>
+          {hasSimulated && (
+            <button
+              type="button"
+              disabled={isSimulating}
+              onClick={handleResetSimulation}
+              className={`
+                px-3 py-1 rounded text-sm font-medium transition-all duration-150 ease-in-out
+                ${isSimulating
+                  ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                  : ' text-custom-pink hover:text-custom-pink/80 border border-custom-pink hover:border-custom-pink/80'
+                }
+              `}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+        {isSimulating && (
+          <div className="mt-2 bg-gray-700 rounded-full h-2">
+            <div className="bg-custom-green h-2 rounded-full" style={{ width: `${progress}%` }}></div>
+          </div>
+        )}
       </form>
-      {showHelp && <HelpTextPopup>
-        <HelpTextTitle>{titleTexts[showHelp]}</HelpTextTitle>
-        <HelpTextContent>
-          <ReactMarkdown>
-            {helpTexts[showHelp] + "\n\nSee the [Proximum lightpaper](https://www.proximum.xyz/proximum-lightpaper.pdf) for more information."}
-          </ReactMarkdown>
-        </HelpTextContent>
-        <CloseButton onClick={() => setShowHelp(undefined)}>Close</CloseButton>
-      </HelpTextPopup>
-      }
-    </FormWrapper >
+      {showHelp && (
+        <HelpTextPopup
+          title={titleTexts[showHelp]}
+          content={helpTexts[showHelp]}
+          onClose={() => setShowHelp(undefined)}
+        />
+      )}
+    </div>
   );
 };
 

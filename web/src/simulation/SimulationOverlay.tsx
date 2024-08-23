@@ -1,74 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import styled from 'styled-components';
 import SimulationForm from './SimulationForm';
 import StatsView from './StatsView';
 import { CompilerParams, PATHS, SimulationConfig, Stats } from '../types';
 import { InitOutput, get_compile_parameters } from 'rust-proximum-simulation';
 import { useNavigate } from 'react-router-dom';
-
-
-const HomeLink = styled.a`
-  display: inline-block;
-  height: 65px;
-  color: #ffffff !important;
-  text-decoration: none !important;
-  cursor: pointer;
-  font-size: 50px;
-  line-height: 50px;
-  margin-top: 0px;
-  border-radius: 4px;
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    text-decoration-color: rgba(255, 255, 255, 0.8);
-  }
-`;
-
-const ToggleButton = styled.button`
-  background-color: transparent;
-  color: #ffffff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-bottom: 10px;
-  transition: background-color 0.3s ease;
-  font-size: 14px;
-  // text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-color: rgba(255, 255, 255, 0.6);
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    text-decoration-color: rgba(255, 255, 255, 0.8);
-  }
-`;
-
-const OverlayWrapper = styled.div`
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  width: 100vw;
-  height: 100vh;
-  z-index: 100000;
-  padding: 10px;
-  border-radius: 4px;
-  max-width: 800px;
-  width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: space-between;
-`;
-
-const Column = styled.div`
-  flex: 2;
-`;
-
-
-const Column2 = styled.div`
-  flex: 3;
-`;
 
 interface SimulationOverlayProps {
   runSimulation: (params: SimulationConfig) => void;
@@ -78,76 +13,69 @@ interface SimulationOverlayProps {
   progress: number;
 }
 
-const SimulationOverlay: React.FC<SimulationOverlayProps> = ({
+const SimulationOverlay = ({
   stats,
   runSimulation,
   resetSimulation,
   wasm,
   progress
-}) => {
+}: SimulationOverlayProps) => {
   const [isFormCollapsed, setIsFormCollapsed] = useState(false);
   const [isStatsCollapsed, setIsStatsCollapsed] = useState(false);
-
-  // Get the compiler params once
   const [compilerParams, setCompilerParams] = useState<CompilerParams>();
-
   const navigate = useNavigate();
 
-  // Save compiler params
   useEffect(() => {
     const paramString = get_compile_parameters();
     setCompilerParams(JSON.parse(paramString));
   }, []);
 
-  const home = <HomeLink onClick={() => {
-    console.log('***', {});
-    navigate(PATHS.home);
-  }}>ᚼ</HomeLink>
-
-  const form = () => {
-
-    if (!compilerParams) return null;
-
-    return (
-      <Column>
-        <ToggleButton onClick={() => { setIsFormCollapsed(!isFormCollapsed) }}>
-          {isFormCollapsed ? 'Show Controls' : 'Hide Controls'}
-        </ToggleButton>
-        {
-          !isFormCollapsed && (
-            <>
-              <SimulationForm
-                runSimulation={runSimulation}
-                resetSimulation={resetSimulation}
-                compilerParams={compilerParams}
-                progress={progress}
-              />
-            </>
-          )
-        }
-      </Column>)
-  }
-
-  const statsView = () => {
-    if (!stats) {
-      return null
-    }
-    return (
-      <Column2>
-        <ToggleButton onClick={() => { setIsStatsCollapsed(!isStatsCollapsed) }}>
-          {isStatsCollapsed ? 'Show Stats' : 'Hide Stats'}
-        </ToggleButton>
-        {!isStatsCollapsed && < StatsView stats={stats} />}
-      </Column2>
-    )
-  }
+  const toggleForm = () => setIsFormCollapsed(!isFormCollapsed);
+  const toggleStats = () => setIsStatsCollapsed(!isStatsCollapsed);
 
   return (
-    <OverlayWrapper>
-      {home}
-      {form()}
-      {statsView()}
-    </OverlayWrapper >
+    <div className="fixed top-0 left-0 z-50 max-h-screen overflow-y-auto">
+      <button
+        onClick={() => navigate(PATHS.home)}
+        className="fixed top-4 right-4 text-5xl text-white hover:bg-none p-2 hidden md:block"
+      >
+        ᚼ
+      </button>
+      <div className="w-full sm:w-96 md:w-[500px] p-4">
+        <div className="space-y-4">
+          <button
+            onClick={toggleForm}
+            className="w-full text-left px-3 text-sm font-medium text-white hover:text-white/80 transition-all duration-150 ease-in-out"
+          >
+            {isFormCollapsed ? '▼ Show Controls' : '▲ Hide Controls'}
+          </button>
+
+          {!isFormCollapsed && compilerParams && (
+            <SimulationForm
+              runSimulation={runSimulation}
+              resetSimulation={resetSimulation}
+              compilerParams={compilerParams}
+              progress={progress}
+            />
+          )}
+
+          {stats && (
+            <>
+              <button
+                onClick={toggleStats}
+                className="w-full text-left px-3 text-sm font-medium text-white hover:text-white/80 transition-all duration-150 ease-in-out"
+              >
+                {isStatsCollapsed ? '▼ Show Stats' : '▲ Hide Stats'}
+              </button>
+
+              {!isStatsCollapsed && (
+                <StatsView stats={stats} />
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
