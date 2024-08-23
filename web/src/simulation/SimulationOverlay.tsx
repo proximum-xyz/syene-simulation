@@ -35,13 +35,13 @@ const SimulationOverlay = ({
 
   return (
     <div className="fixed top-0 left-0 z-50 max-h-screen overflow-y-auto">
-      <button
-        onClick={() => navigate(PATHS.home)}
-        className="fixed top-4 right-4 text-5xl text-white hover:bg-none p-2 hidden md:block"
-      >
-        ᚼ
-      </button>
       <div className="w-full sm:w-96 md:w-[500px] p-4">
+        <button
+          onClick={() => navigate(PATHS.home)}
+          className="text-5xl text-white hover:text-white/80 mb-4"
+        >
+          ᚼ
+        </button>
         <div className="space-y-4">
           <button
             onClick={toggleForm}
