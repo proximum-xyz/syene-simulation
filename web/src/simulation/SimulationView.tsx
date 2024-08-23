@@ -63,6 +63,9 @@ const SimulationView = () => {
 
   return (
     <>
+      <Map>
+        <SimulationMapContent nodes={nodes} />
+      </Map>
       {wasm && <SimulationOverlay
         progress={progress}
         wasm={wasm}
@@ -70,9 +73,7 @@ const SimulationView = () => {
         runSimulation={runSimulation}
         resetSimulation={resetSimulation}
       />}
-      <Map>
-        <SimulationMapContent nodes={nodes} />
-      </Map>
+
     </>
   );
 };
